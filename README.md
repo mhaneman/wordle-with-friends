@@ -4,7 +4,7 @@ Daily Wordle with login, server-authoritative scoring, and a leaderboard ranked 
 
 ## Stack
 
-- **API:** Go (chi), PostgreSQL, JWT cookies, OAuth (Google/GitHub) + email/password
+- **API:** Go (chi), PostgreSQL, JWT cookies, email/password auth
 - **Web:** React, Vite, Tailwind CSS, **pnpm**
 - **Dev:** Docker Compose (no local `npm`/`pnpm` install required)
 
@@ -21,29 +21,17 @@ docker compose up --build
 
 The `web` service runs `pnpm install` inside the container and keeps `node_modules` in a named volume, so you do not need Node or pnpm on your host.
 
-## OAuth setup (optional)
+## Accounts (invite-only)
 
-1. **Google:** [Google Cloud Console](https://console.cloud.google.com/) → OAuth client → redirect URI:  
-   `http://localhost:8080/api/v1/auth/oauth/google/callback`
-2. **GitHub:** Settings → Developer settings → OAuth App → callback:  
-   `http://localhost:8080/api/v1/auth/oauth/github/callback`
+Registration is **invite-only**. New users submit http://localhost:5173/register and wait for approval.
 
-Add credentials to `.env`:
+**Admin dashboard:** http://localhost:5173/admin/login — approve or reject pending signups.
+
+Set in `.env`:
 
 ```env
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GITHUB_CLIENT_ID=...
-GITHUB_CLIENT_SECRET=...
+ADMIN_PASSWORD=your-secure-admin-password
 ```
-
-Restart: `docker compose up --build`
-
-## Email accounts
-
-Register at http://localhost:5173/register (password minimum 8 characters).
-
-OAuth and email accounts are separate in v1 (same email on both creates two accounts).
 
 ## Game rules
 
@@ -75,4 +63,4 @@ docker build -f backend/Dockerfile --target prod -t wordle-api ./backend
 docker build -f frontend/Dockerfile --target prod -t wordle-web ./frontend
 ```
 
-Set production `JWT_SECRET`, `DATABASE_URL`, `CORS_ORIGIN`, `FRONTEND_URL`, and OAuth redirect URLs to your deployed domains.
+Set production `JWT_SECRET`, `DATABASE_URL`, `CORS_ORIGIN`, and `FRONTEND_URL` to your deployed domains.

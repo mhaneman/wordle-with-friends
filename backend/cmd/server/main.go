@@ -49,6 +49,9 @@ func main() {
 
 	tokens := auth.NewTokenService(cfg.JWTSecret)
 	authHandler := auth.NewHandler(st, tokens, cfg)
+	if cfg.AdminPassword == "" {
+		log.Println("warning: ADMIN_PASSWORD not set — invite-only registration disabled")
+	}
 	gameHandler := game.NewHandler(st, dict)
 	lbHandler := leaderboard.NewHandler(st)
 
@@ -78,8 +81,6 @@ func main() {
 			ar.Post("/login", authHandler.Login)
 			ar.Post("/logout", authHandler.Logout)
 			ar.With(appmw.RequireAuth(tokens, st)).Get("/me", authHandler.Me)
-			ar.Get("/oauth/{provider}", authHandler.OAuthStart)
-			ar.Get("/oauth/{provider}/callback", authHandler.OAuthCallback)
 		})
 
 		api.Route("/game", func(gr chi.Router) {
@@ -92,6 +93,15 @@ func main() {
 		api.Route("/leaderboard", func(lr chi.Router) {
 			lr.Use(appmw.OptionalAuth(tokens, st))
 			lr.Get("/today", lbHandler.Today)
+		})
+
+		api.Route("/admin", func(ar chi.Router) {
+			ar.Post("/login", authHandler.AdminLogin)
+			ar.Post("/logout", authHandler.AdminLogout)
+			ar.Get("/me", authHandler.AdminMe)
+			ar.Get("/requests", authHandler.ListPendingRequests)
+			ar.Post("/requests/{id}/approve", authHandler.ApproveRequest)
+			ar.Post("/requests/{id}/reject", authHandler.RejectRequest)
 		})
 	})
 

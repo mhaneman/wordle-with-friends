@@ -9,10 +9,18 @@ import (
 	"github.com/google/uuid"
 )
 
-const cookieName = "wwf_token"
+const (
+	userCookieName  = "wwf_token"
+	adminCookieName = "wwf_admin"
+)
 
 type Claims struct {
 	UserID uuid.UUID `json:"uid"`
+	jwt.RegisteredClaims
+}
+
+type AdminClaims struct {
+	Admin bool `json:"admin"`
 	jwt.RegisteredClaims
 }
 
@@ -36,6 +44,18 @@ func (t *TokenService) Issue(userID uuid.UUID) (string, error) {
 	return token.SignedString(t.secret)
 }
 
+func (t *TokenService) IssueAdmin() (string, error) {
+	claims := AdminClaims{
+		Admin: true,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(t.secret)
+}
+
 func (t *TokenService) Parse(tokenStr string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return t.secret, nil
@@ -50,20 +70,50 @@ func (t *TokenService) Parse(tokenStr string) (*Claims, error) {
 	return claims, nil
 }
 
-func (t *TokenService) SetCookie(w http.ResponseWriter, token string) {
+func (t *TokenService) ParseAdmin(tokenStr string) (*AdminClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &AdminClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return t.secret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	claims, ok := token.Claims.(*AdminClaims)
+	if !ok || !token.Valid || !claims.Admin {
+		return nil, errors.New("invalid admin token")
+	}
+	return claims, nil
+}
+
+func (t *TokenService) SetUserCookie(w http.ResponseWriter, token string) {
+	setCookie(w, userCookieName, token, 7*24*3600)
+}
+
+func (t *TokenService) ClearUserCookie(w http.ResponseWriter) {
+	clearCookie(w, userCookieName)
+}
+
+func (t *TokenService) SetAdminCookie(w http.ResponseWriter, token string) {
+	setCookie(w, adminCookieName, token, 24*3600)
+}
+
+func (t *TokenService) ClearAdminCookie(w http.ResponseWriter) {
+	clearCookie(w, adminCookieName)
+}
+
+func setCookie(w http.ResponseWriter, name, value string, maxAge int) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     cookieName,
-		Value:    token,
+		Name:     name,
+		Value:    value,
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   7 * 24 * 3600,
+		MaxAge:   maxAge,
 	})
 }
 
-func (t *TokenService) ClearCookie(w http.ResponseWriter) {
+func clearCookie(w http.ResponseWriter, name string) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     cookieName,
+		Name:     name,
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
@@ -71,8 +121,15 @@ func (t *TokenService) ClearCookie(w http.ResponseWriter) {
 	})
 }
 
-func TokenFromRequest(r *http.Request) string {
-	if c, err := r.Cookie(cookieName); err == nil {
+func UserTokenFromRequest(r *http.Request) string {
+	if c, err := r.Cookie(userCookieName); err == nil {
+		return c.Value
+	}
+	return ""
+}
+
+func AdminTokenFromRequest(r *http.Request) string {
+	if c, err := r.Cookie(adminCookieName); err == nil {
 		return c.Value
 	}
 	return ""

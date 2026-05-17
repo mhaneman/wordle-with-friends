@@ -21,7 +21,3 @@ export async function api<T>(
   }
   return res.json() as Promise<T>;
 }
-
-export function oauthUrl(provider: "google" | "github") {
-  return `${API_URL}/api/v1/auth/oauth/${provider}`;
-}

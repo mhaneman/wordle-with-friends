@@ -11,7 +11,7 @@ import (
 func RequireAuth(tokens *auth.TokenService, st *store.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := auth.TokenFromRequest(r)
+			token := auth.UserTokenFromRequest(r)
 			if token == "" {
 				writeUnauthorized(w)
 				return
@@ -34,7 +34,7 @@ func RequireAuth(tokens *auth.TokenService, st *store.Store) func(http.Handler) 
 func OptionalAuth(tokens *auth.TokenService, st *store.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := auth.TokenFromRequest(r)
+			token := auth.UserTokenFromRequest(r)
 			if token != "" {
 				if claims, err := tokens.Parse(token); err == nil {
 					if user, err := st.FindUserByID(r.Context(), claims.UserID); err == nil {
