@@ -7,18 +7,16 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/spaceclone/wordle-with-friends/backend/internal/config"
 	"github.com/spaceclone/wordle-with-friends/backend/internal/store"
 )
 
 type Handler struct {
 	store  *store.Store
 	tokens *TokenService
-	cfg    config.Config
 }
 
-func NewHandler(st *store.Store, tokens *TokenService, cfg config.Config) *Handler {
-	return &Handler{store: st, tokens: tokens, cfg: cfg}
+func NewHandler(st *store.Store, tokens *TokenService) *Handler {
+	return &Handler{store: st, tokens: tokens}
 }
 
 type registerRequest struct {

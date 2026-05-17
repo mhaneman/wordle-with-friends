@@ -23,8 +23,6 @@ type User struct {
 	Email        string    `json:"email"`
 	DisplayName  string    `json:"displayName"`
 	PasswordHash *string   `json:"-"`
-	OAuthProvider *string  `json:"-"`
-	OAuthSubject  *string  `json:"-"`
 	CreatedAt    time.Time `json:"createdAt"`
 }
 
@@ -76,9 +74,9 @@ func (s *Store) CreateUser(ctx context.Context, email, displayName string, passw
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO users (email, display_name, password_hash)
 		VALUES ($1, $2, $3)
-		RETURNING id, email, display_name, password_hash, oauth_provider, oauth_subject, created_at
+		RETURNING id, email, display_name, password_hash, created_at
 	`, email, displayName, passwordHash).Scan(
-		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.OAuthProvider, &u.OAuthSubject, &u.CreatedAt,
+		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.CreatedAt,
 	)
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -92,10 +90,10 @@ func (s *Store) CreateUser(ctx context.Context, email, displayName string, passw
 func (s *Store) FindUserByEmail(ctx context.Context, email string) (*User, error) {
 	var u User
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, email, display_name, password_hash, oauth_provider, oauth_subject, created_at
+		SELECT id, email, display_name, password_hash, created_at
 		FROM users WHERE email = $1
 	`, email).Scan(
-		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.OAuthProvider, &u.OAuthSubject, &u.CreatedAt,
+		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -106,42 +104,14 @@ func (s *Store) FindUserByEmail(ctx context.Context, email string) (*User, error
 func (s *Store) FindUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	var u User
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, email, display_name, password_hash, oauth_provider, oauth_subject, created_at
+		SELECT id, email, display_name, password_hash, created_at
 		FROM users WHERE id = $1
 	`, id).Scan(
-		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.OAuthProvider, &u.OAuthSubject, &u.CreatedAt,
+		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
-	return &u, err
-}
-
-func (s *Store) FindUserByOAuth(ctx context.Context, provider, subject string) (*User, error) {
-	var u User
-	err := s.pool.QueryRow(ctx, `
-		SELECT id, email, display_name, password_hash, oauth_provider, oauth_subject, created_at
-		FROM users WHERE oauth_provider = $1 AND oauth_subject = $2
-	`, provider, subject).Scan(
-		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.OAuthProvider, &u.OAuthSubject, &u.CreatedAt,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrNotFound
-	}
-	return &u, err
-}
-
-func (s *Store) UpsertOAuthUser(ctx context.Context, email, displayName, provider, subject string) (*User, error) {
-	var u User
-	err := s.pool.QueryRow(ctx, `
-		INSERT INTO users (email, display_name, oauth_provider, oauth_subject)
-		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (oauth_provider, oauth_subject) DO UPDATE
-		SET email = EXCLUDED.email, display_name = EXCLUDED.display_name
-		RETURNING id, email, display_name, password_hash, oauth_provider, oauth_subject, created_at
-	`, email, displayName, provider, subject).Scan(
-		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.OAuthProvider, &u.OAuthSubject, &u.CreatedAt,
-	)
 	return &u, err
 }
 

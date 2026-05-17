@@ -48,7 +48,7 @@ func main() {
 	}
 
 	tokens := auth.NewTokenService(cfg.JWTSecret)
-	authHandler := auth.NewHandler(st, tokens, cfg)
+	authHandler := auth.NewHandler(st, tokens)
 	gameHandler := game.NewHandler(st, dict)
 	lbHandler := leaderboard.NewHandler(st)
 
@@ -78,8 +78,6 @@ func main() {
 			ar.Post("/login", authHandler.Login)
 			ar.Post("/logout", authHandler.Logout)
 			ar.With(appmw.RequireAuth(tokens, st)).Get("/me", authHandler.Me)
-			ar.Get("/oauth/{provider}", authHandler.OAuthStart)
-			ar.Get("/oauth/{provider}/callback", authHandler.OAuthCallback)
 		})
 
 		api.Route("/game", func(gr chi.Router) {
