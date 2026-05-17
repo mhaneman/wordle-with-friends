@@ -1,22 +1,26 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/spaceclone/wordle-with-friends/backend/internal/config"
 	"github.com/spaceclone/wordle-with-friends/backend/internal/store"
 )
 
 type Handler struct {
 	store  *store.Store
 	tokens *TokenService
+	cfg    config.Config
 }
 
-func NewHandler(st *store.Store, tokens *TokenService) *Handler {
-	return &Handler{store: st, tokens: tokens}
+func NewHandler(st *store.Store, tokens *TokenService, cfg config.Config) *Handler {
+	return &Handler{store: st, tokens: tokens, cfg: cfg}
 }
 
 type registerRequest struct {
@@ -31,6 +35,11 @@ type loginRequest struct {
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
+	if !h.cfg.InviteOnlyEnabled() {
+		writeError(w, http.StatusServiceUnavailable, "registration is not configured")
+		return
+	}
+
 	var req registerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -42,23 +51,57 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "email, display name, and password (8+ chars) required")
 		return
 	}
+
+	if _, err := h.store.FindUserByEmail(r.Context(), req.Email); err == nil {
+		writeError(w, http.StatusConflict, "email already registered")
+		return
+	} else if !errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusInternalServerError, "could not create account")
+		return
+	}
+
+	if _, err := h.store.FindPendingRegistrationByEmail(r.Context(), req.Email); err == nil {
+		writeError(w, http.StatusConflict, "a registration request is already pending for this email")
+		return
+	} else if !errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusInternalServerError, "could not create account")
+		return
+	}
+
 	hash, err := HashPassword(req.Password)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "could not create account")
 		return
 	}
-	hashStr := hash
-	user, err := h.store.CreateUser(r.Context(), req.Email, req.DisplayName, &hashStr)
-	if errors.Is(err, store.ErrEmailExists) {
-		writeError(w, http.StatusConflict, "email already registered")
-		return
-	}
+
+	token, err := newApproveToken()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "could not create account")
 		return
 	}
-	h.issueSession(w, user.ID)
-	writeJSON(w, http.StatusCreated, userResponse(user))
+
+	_, err = h.store.CreateRegistrationRequest(r.Context(), req.Email, req.DisplayName, hash, token)
+	if err != nil {
+		if errors.Is(err, store.ErrEmailExists) {
+			writeError(w, http.StatusConflict, "a registration request is already pending for this email")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "could not create account")
+		return
+	}
+
+	writeJSON(w, http.StatusAccepted, map[string]string{
+		"status":  "pending",
+		"message": "Your registration was submitted. You'll be able to log in after an admin approves your request.",
+	})
+}
+
+func newApproveToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }
 
 func (h *Handler) issueSession(w http.ResponseWriter, userID uuid.UUID) {
@@ -67,7 +110,7 @@ func (h *Handler) issueSession(w http.ResponseWriter, userID uuid.UUID) {
 		writeError(w, http.StatusInternalServerError, "session error")
 		return
 	}
-	h.tokens.SetCookie(w, token)
+	h.tokens.SetUserCookie(w, token)
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +120,12 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
+
+	if pending, err := h.store.FindPendingRegistrationByEmail(r.Context(), req.Email); err == nil && pending != nil {
+		writeError(w, http.StatusForbidden, "your account is pending approval")
+		return
+	}
+
 	user, err := h.store.FindUserByEmail(r.Context(), req.Email)
 	if errors.Is(err, store.ErrNotFound) || user.PasswordHash == nil || !CheckPassword(*user.PasswordHash, req.Password) {
 		writeError(w, http.StatusUnauthorized, "invalid email or password")
@@ -91,7 +140,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	h.tokens.ClearCookie(w)
+	h.tokens.ClearUserCookie(w)
 	w.WriteHeader(http.StatusNoContent)
 }
 

@@ -6,11 +6,12 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
-	JWTSecret   string
-	Port        string
-	CORSOrigin  string
-	FrontendURL string
+	DatabaseURL   string
+	JWTSecret     string
+	Port          string
+	CORSOrigin    string
+	FrontendURL   string
+	AdminPassword string
 }
 
 func Load() Config {
@@ -19,12 +20,17 @@ func Load() Config {
 		port = "8080"
 	}
 	return Config{
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		JWTSecret:   os.Getenv("JWT_SECRET"),
-		Port:        port,
-		CORSOrigin:  getenv("CORS_ORIGIN", "http://localhost:5173"),
-		FrontendURL: getenv("FRONTEND_URL", "http://localhost:5173"),
+		DatabaseURL:   os.Getenv("DATABASE_URL"),
+		JWTSecret:     os.Getenv("JWT_SECRET"),
+		Port:          port,
+		CORSOrigin:    getenv("CORS_ORIGIN", "http://localhost:5173"),
+		FrontendURL:   getenv("FRONTEND_URL", "http://localhost:5173"),
+		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
 	}
+}
+
+func (c Config) InviteOnlyEnabled() bool {
+	return c.AdminPassword != ""
 }
 
 func getenv(key, fallback string) string {

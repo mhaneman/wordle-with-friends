@@ -21,9 +21,17 @@ docker compose up --build
 
 The `web` service runs `pnpm install` inside the container and keeps `node_modules` in a named volume, so you do not need Node or pnpm on your host.
 
-## Accounts
+## Accounts (invite-only)
 
-Register at http://localhost:5173/register (password minimum 8 characters).
+Registration is **invite-only**. New users submit http://localhost:5173/register and wait for approval.
+
+**Admin dashboard:** http://localhost:5173/admin/login — approve or reject pending signups.
+
+Set in `.env`:
+
+```env
+ADMIN_PASSWORD=your-secure-admin-password
+```
 
 ## Game rules
 
