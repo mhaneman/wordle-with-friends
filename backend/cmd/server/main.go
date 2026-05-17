@@ -1,0 +1,115 @@
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+
+	"github.com/spaceclone/wordle-with-friends/backend/internal/auth"
+	"github.com/spaceclone/wordle-with-friends/backend/internal/config"
+	"github.com/spaceclone/wordle-with-friends/backend/internal/game"
+	"github.com/spaceclone/wordle-with-friends/backend/internal/leaderboard"
+	appmw "github.com/spaceclone/wordle-with-friends/backend/internal/middleware"
+	"github.com/spaceclone/wordle-with-friends/backend/internal/store"
+)
+
+func main() {
+	cfg := config.Load()
+	if cfg.DatabaseURL == "" || cfg.JWTSecret == "" {
+		log.Fatal("DATABASE_URL and JWT_SECRET are required")
+	}
+
+	ctx := context.Background()
+	st, err := store.New(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("database: %v", err)
+	}
+	defer st.Close()
+
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = "data"
+	}
+	dict, err := game.LoadDictionary(
+		filepath.Join(dataDir, "answers.txt"),
+		filepath.Join(dataDir, "guesses.txt"),
+	)
+	if err != nil {
+		log.Fatalf("dictionary: %v", err)
+	}
+
+	tokens := auth.NewTokenService(cfg.JWTSecret)
+	authHandler := auth.NewHandler(st, tokens, cfg)
+	gameHandler := game.NewHandler(st, dict)
+	lbHandler := leaderboard.NewHandler(st)
+
+	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{cfg.CORSOrigin},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+
+	r.Route("/api/v1", func(api chi.Router) {
+		api.Route("/auth", func(ar chi.Router) {
+			ar.Use(appmw.RateLimit(30, time.Minute))
+			ar.Post("/register", authHandler.Register)
+			ar.Post("/login", authHandler.Login)
+			ar.Post("/logout", authHandler.Logout)
+			ar.With(appmw.RequireAuth(tokens, st)).Get("/me", authHandler.Me)
+			ar.Get("/oauth/{provider}", authHandler.OAuthStart)
+			ar.Get("/oauth/{provider}/callback", authHandler.OAuthCallback)
+		})
+
+		api.Route("/game", func(gr chi.Router) {
+			gr.Use(appmw.RequireAuth(tokens, st))
+			gr.Use(appmw.RateLimit(120, time.Minute))
+			gr.Get("/today", gameHandler.Today)
+			gr.Post("/guess", gameHandler.Guess)
+		})
+
+		api.Route("/leaderboard", func(lr chi.Router) {
+			lr.Use(appmw.OptionalAuth(tokens, st))
+			lr.Get("/today", lbHandler.Today)
+		})
+	})
+
+	addr := ":" + cfg.Port
+	srv := &http.Server{Addr: addr, Handler: r}
+
+	go func() {
+		log.Printf("listening on %s", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(shutdownCtx)
+}

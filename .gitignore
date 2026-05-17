@@ -1,0 +1,30 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Dependencies & build output (any package manager / workspace)
+node_modules/
+dist/
+build/
+out/
+
+# Misc
+.cache/
+tmp/
+*.tmp

@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+
+# Vite
+.vite/
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Local env overrides
+.env
+.env.local
+.env.*.local
+
+# Editor/debug
+.eslintcache

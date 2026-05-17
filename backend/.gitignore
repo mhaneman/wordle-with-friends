@@ -1,0 +1,18 @@
+# Binaries & test artifacts
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Go workspace (if used)
+go.work
+go.work.sum
+
+# Vendor (uncomment if you vendor deps and don't commit them)
+# vendor/
