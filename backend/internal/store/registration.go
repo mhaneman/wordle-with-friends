@@ -78,6 +78,14 @@ func (s *Store) FindRegistrationByID(ctx context.Context, id uuid.UUID) (*Regist
 	return &rr, err
 }
 
+func (s *Store) CountPendingRegistrations(ctx context.Context) (int, error) {
+	var n int
+	err := s.pool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM registration_requests WHERE status = 'pending'
+	`).Scan(&n)
+	return n, err
+}
+
 func (s *Store) ListPendingRegistrations(ctx context.Context) ([]RegistrationRequestPublic, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT id, username, created_at

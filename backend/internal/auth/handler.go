@@ -49,6 +49,19 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.cfg.MaxPendingRegistrations > 0 {
+		pending, err := h.store.CountPendingRegistrations(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "could not create account")
+			return
+		}
+		if pending >= h.cfg.MaxPendingRegistrations {
+			writeError(w, http.StatusServiceUnavailable,
+				"too many pending registration requests — try again later")
+			return
+		}
+	}
+
 	if _, err := h.store.FindUserByUsername(r.Context(), req.Username); err == nil {
 		writeError(w, http.StatusConflict, "this username is already taken — try another")
 		return
