@@ -14,14 +14,13 @@ import (
 
 var (
 	ErrNotFound      = errors.New("not found")
-	ErrEmailExists   = errors.New("email already exists")
+	ErrUsernameExists = errors.New("username already exists")
 	ErrGameFinished  = errors.New("game already finished")
 )
 
 type User struct {
 	ID           uuid.UUID `json:"id"`
-	Email        string    `json:"email"`
-	DisplayName  string    `json:"displayName"`
+	Username     string    `json:"username"`
 	PasswordHash *string   `json:"-"`
 	CreatedAt    time.Time `json:"createdAt"`
 }
@@ -46,7 +45,7 @@ type GameResult struct {
 type LeaderboardEntry struct {
 	Rank        int       `json:"rank"`
 	UserID      uuid.UUID `json:"userId"`
-	DisplayName string    `json:"displayName"`
+	Username    string    `json:"username"`
 	GuessCount  int       `json:"guessCount"`
 	Points      int       `json:"points"`
 	Berserk     bool      `json:"berserk"`
@@ -56,7 +55,7 @@ type LeaderboardEntry struct {
 type WeeklyLeaderboardEntry struct {
 	Rank        int       `json:"rank"`
 	UserID      uuid.UUID `json:"userId"`
-	DisplayName string    `json:"displayName"`
+	Username    string    `json:"username"`
 	TotalPoints int       `json:"totalPoints"`
 	GamesPlayed int       `json:"gamesPlayed"`
 }
@@ -89,31 +88,31 @@ func (s *Store) Close() {
 	s.pool.Close()
 }
 
-func (s *Store) CreateUser(ctx context.Context, email, displayName string, passwordHash *string) (*User, error) {
+func (s *Store) CreateUser(ctx context.Context, username string, passwordHash *string) (*User, error) {
 	var u User
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO users (email, display_name, password_hash)
-		VALUES ($1, $2, $3)
-		RETURNING id, email, display_name, password_hash, created_at
-	`, email, displayName, passwordHash).Scan(
-		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.CreatedAt,
+		INSERT INTO users (username, password_hash)
+		VALUES ($1, $2)
+		RETURNING id, username, password_hash, created_at
+	`, username, passwordHash).Scan(
+		&u.ID, &u.Username, &u.PasswordHash, &u.CreatedAt,
 	)
 	if err != nil {
 		if isUniqueViolation(err) {
-			return nil, ErrEmailExists
+			return nil, ErrUsernameExists
 		}
 		return nil, err
 	}
 	return &u, nil
 }
 
-func (s *Store) FindUserByEmail(ctx context.Context, email string) (*User, error) {
+func (s *Store) FindUserByUsername(ctx context.Context, username string) (*User, error) {
 	var u User
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, email, display_name, password_hash, created_at
-		FROM users WHERE email = $1
-	`, email).Scan(
-		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.CreatedAt,
+		SELECT id, username, password_hash, created_at
+		FROM users WHERE username = $1
+	`, username).Scan(
+		&u.ID, &u.Username, &u.PasswordHash, &u.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -124,10 +123,10 @@ func (s *Store) FindUserByEmail(ctx context.Context, email string) (*User, error
 func (s *Store) FindUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	var u User
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, email, display_name, password_hash, created_at
+		SELECT id, username, password_hash, created_at
 		FROM users WHERE id = $1
 	`, id).Scan(
-		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.CreatedAt,
+		&u.ID, &u.Username, &u.PasswordHash, &u.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -223,7 +222,7 @@ func (s *Store) GetLeaderboard(ctx context.Context, date time.Time, limit int) (
 	rows, err := s.pool.Query(ctx, `
 		SELECT
 			u.id,
-			u.display_name,
+			u.username,
 			gr.berserk,
 			COALESCE(gr.guess_count, jsonb_array_length(gr.guesses)::int) AS guess_count,
 			` + gamePointsSQL + ` AS points,
@@ -245,7 +244,7 @@ func (s *Store) GetLeaderboard(ctx context.Context, date time.Time, limit int) (
 	rank := 1
 	for rows.Next() {
 		var e LeaderboardEntry
-		if err := rows.Scan(&e.UserID, &e.DisplayName, &e.Berserk, &e.GuessCount, &e.Points, &e.CompletedAt); err != nil {
+		if err := rows.Scan(&e.UserID, &e.Username, &e.Berserk, &e.GuessCount, &e.Points, &e.CompletedAt); err != nil {
 			return nil, err
 		}
 		e.Rank = rank
@@ -259,7 +258,7 @@ func (s *Store) GetWeeklyLeaderboard(ctx context.Context, weekStart, weekEnd tim
 	rows, err := s.pool.Query(ctx, `
 		SELECT
 			u.id,
-			u.display_name,
+			u.username,
 			SUM(`+gamePointsSQL+`)::int AS total_points,
 			COUNT(*)::int AS games_played
 		FROM game_results gr
@@ -268,7 +267,7 @@ func (s *Store) GetWeeklyLeaderboard(ctx context.Context, weekStart, weekEnd tim
 		  AND gr.puzzle_date <= $2::date
 		  AND gr.in_progress = FALSE
 		  AND gr.completed_at IS NOT NULL
-		GROUP BY u.id, u.display_name
+		GROUP BY u.id, u.username
 		ORDER BY total_points DESC, MIN(gr.completed_at) ASC
 		LIMIT $3
 	`, weekStart.Format("2006-01-02"), weekEnd.Format("2006-01-02"), limit)
@@ -281,7 +280,7 @@ func (s *Store) GetWeeklyLeaderboard(ctx context.Context, weekStart, weekEnd tim
 	rank := 1
 	for rows.Next() {
 		var e WeeklyLeaderboardEntry
-		if err := rows.Scan(&e.UserID, &e.DisplayName, &e.TotalPoints, &e.GamesPlayed); err != nil {
+		if err := rows.Scan(&e.UserID, &e.Username, &e.TotalPoints, &e.GamesPlayed); err != nil {
 			return nil, err
 		}
 		e.Rank = rank

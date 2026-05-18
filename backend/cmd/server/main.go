@@ -22,6 +22,8 @@ import (
 	"github.com/spaceclone/wordle-with-friends/backend/internal/store"
 )
 
+const maxRequestBody = 1 << 20 // 1 MiB
+
 func main() {
 	cfg := config.Load()
 	if cfg.DatabaseURL == "" || cfg.JWTSecret == "" {
@@ -47,7 +49,7 @@ func main() {
 		log.Fatalf("dictionary: %v", err)
 	}
 
-	tokens := auth.NewTokenService(cfg.JWTSecret)
+	tokens := auth.NewTokenService(cfg.JWTSecret, cfg.CookieSecure)
 	authHandler := auth.NewHandler(st, tokens, cfg)
 	if cfg.AdminPassword == "" {
 		log.Println("warning: ADMIN_PASSWORD not set — invite-only registration disabled")
@@ -57,9 +59,13 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	if cfg.TrustProxy {
+		r.Use(middleware.RealIP)
+	}
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(appmw.SecurityHeaders)
+	r.Use(appmw.MaxBodyBytes(maxRequestBody))
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{cfg.CORSOrigin},
@@ -76,7 +82,7 @@ func main() {
 
 	r.Route("/api/v1", func(api chi.Router) {
 		api.Route("/auth", func(ar chi.Router) {
-			ar.Use(appmw.RateLimit(30, time.Minute))
+			ar.Use(appmw.RateLimit(30, time.Minute, cfg.TrustProxy))
 			ar.Post("/register", authHandler.Register)
 			ar.Post("/login", authHandler.Login)
 			ar.Post("/logout", authHandler.Logout)
@@ -85,7 +91,7 @@ func main() {
 
 		api.Route("/game", func(gr chi.Router) {
 			gr.Use(appmw.RequireAuth(tokens, st))
-			gr.Use(appmw.RateLimit(120, time.Minute))
+			gr.Use(appmw.RateLimit(120, time.Minute, cfg.TrustProxy))
 			gr.Get("/today", gameHandler.Today)
 			gr.Post("/berserk", gameHandler.Berserk)
 			gr.Post("/guess", gameHandler.Guess)
@@ -98,6 +104,7 @@ func main() {
 		})
 
 		api.Route("/admin", func(ar chi.Router) {
+			ar.Use(appmw.RateLimit(10, time.Minute, cfg.TrustProxy))
 			ar.Post("/login", authHandler.AdminLogin)
 			ar.Post("/logout", authHandler.AdminLogout)
 			ar.Get("/me", authHandler.AdminMe)

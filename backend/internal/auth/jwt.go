@@ -25,11 +25,12 @@ type AdminClaims struct {
 }
 
 type TokenService struct {
-	secret []byte
+	secret       []byte
+	secureCookie bool
 }
 
-func NewTokenService(secret string) *TokenService {
-	return &TokenService{secret: []byte(secret)}
+func NewTokenService(secret string, secureCookie bool) *TokenService {
+	return &TokenService{secret: []byte(secret), secureCookie: secureCookie}
 }
 
 func (t *TokenService) Issue(userID uuid.UUID) (string, error) {
@@ -85,40 +86,48 @@ func (t *TokenService) ParseAdmin(tokenStr string) (*AdminClaims, error) {
 }
 
 func (t *TokenService) SetUserCookie(w http.ResponseWriter, token string) {
-	setCookie(w, userCookieName, token, 7*24*3600)
+	t.setCookie(w, userCookieName, token, 7*24*3600)
 }
 
 func (t *TokenService) ClearUserCookie(w http.ResponseWriter) {
-	clearCookie(w, userCookieName)
+	t.clearCookie(w, userCookieName)
 }
 
 func (t *TokenService) SetAdminCookie(w http.ResponseWriter, token string) {
-	setCookie(w, adminCookieName, token, 24*3600)
+	t.setCookie(w, adminCookieName, token, 24*3600)
 }
 
 func (t *TokenService) ClearAdminCookie(w http.ResponseWriter) {
-	clearCookie(w, adminCookieName)
+	t.clearCookie(w, adminCookieName)
 }
 
-func setCookie(w http.ResponseWriter, name, value string, maxAge int) {
-	http.SetCookie(w, &http.Cookie{
+func (t *TokenService) setCookie(w http.ResponseWriter, name, value string, maxAge int) {
+	c := &http.Cookie{
 		Name:     name,
 		Value:    value,
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   maxAge,
-	})
+	}
+	if t.secureCookie {
+		c.Secure = true
+	}
+	http.SetCookie(w, c)
 }
 
-func clearCookie(w http.ResponseWriter, name string) {
-	http.SetCookie(w, &http.Cookie{
+func (t *TokenService) clearCookie(w http.ResponseWriter, name string) {
+	c := &http.Cookie{
 		Name:     name,
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
 		MaxAge:   -1,
-	})
+	}
+	if t.secureCookie {
+		c.Secure = true
+	}
+	http.SetCookie(w, c)
 }
 
 func UserTokenFromRequest(r *http.Request) string {

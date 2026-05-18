@@ -4,7 +4,7 @@ Daily Wordle with login, server-authoritative scoring, and a leaderboard ranked 
 
 ## Stack
 
-- **API:** Go (chi), PostgreSQL, JWT cookies, email/password auth
+- **API:** Go (chi), PostgreSQL, JWT cookies, username/password auth
 - **Web:** React, Vite, Tailwind CSS, **pnpm**
 - **Dev:** Docker Compose (no local `npm`/`pnpm` install required)
 
@@ -23,7 +23,7 @@ The `web` service runs `pnpm install` inside the container and keeps `node_modul
 
 ## Accounts (invite-only)
 
-Registration is **invite-only**. New users submit http://localhost:5173/register and wait for approval.
+Registration is **invite-only**. New users pick a username at http://localhost:5173/register; the site generates a password to save, then they wait for admin approval.
 
 **Admin dashboard:** http://localhost:5173/admin/login — approve or reject pending signups.
 
@@ -58,11 +58,16 @@ make logs        # follow logs
 docker compose exec api goose -dir migrations postgres "$DATABASE_URL" up
 ```
 
-## Production build
+## Production (VPS)
+
+Deploy everything on one server with HTTPS and hardened defaults:
 
 ```bash
-docker build -f backend/Dockerfile --target prod -t wordle-api ./backend
-docker build -f frontend/Dockerfile --target prod -t wordle-web ./frontend
+cp .env.production.example .env.production
+# edit .env.production — set DOMAIN, secrets, CORS_ORIGIN
+make prod-up
 ```
 
-Set production `JWT_SECRET`, `DATABASE_URL`, `CORS_ORIGIN`, and `FRONTEND_URL` to your deployed domains.
+Step-by-step VPS guide (firewall, DNS, verify): **[deploy/VPS.md](deploy/VPS.md)**
+
+Production uses `docker-compose.prod.yml` (Caddy + API + static web + Postgres). The API runs migrations on startup, sets secure cookies, rate-limits admin login, and does not publish the database port.

@@ -1,0 +1,79 @@
+# Production stack: Postgres (internal) + API + static web + Caddy (HTTPS).
+# Usage: cp .env.production.example .env.production && docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wordle
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: wordle
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wordle -d wordle"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - internal
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: prod
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgres://wordle:${POSTGRES_PASSWORD}@db:5432/wordle?sslmode=disable
+      PORT: "8080"
+      APP_ENV: production
+      TRUST_PROXY: "true"
+      DATA_DIR: /app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        VITE_API_URL: ""
+    restart: unless-stopped
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env.production}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env.production}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - web
+    restart: unless-stopped
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

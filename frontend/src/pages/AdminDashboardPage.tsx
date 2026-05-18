@@ -5,8 +5,7 @@ import { useAdmin } from "../hooks/useAdmin";
 
 interface PendingRequest {
   id: string;
-  email: string;
-  displayName: string;
+  username: string;
   createdAt: string;
 }
 
@@ -93,8 +92,7 @@ export function AdminDashboardPage() {
                 className="border border-neutral-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
               >
                 <div>
-                  <p className="font-semibold">{req.displayName}</p>
-                  <p className="text-neutral-400 text-sm">{req.email}</p>
+                  <p className="font-semibold font-mono">{req.username}</p>
                   <p className="text-neutral-600 text-xs mt-1">
                     {new Date(req.createdAt).toLocaleString()}
                   </p>

@@ -2,8 +2,7 @@ export type LetterState = "correct" | "present" | "absent";
 
 export interface User {
   id: string;
-  email: string;
-  displayName: string;
+  username: string;
 }
 
 export interface GuessRow {
@@ -31,7 +30,7 @@ export interface GuessResponse extends GameToday {
 export interface LeaderboardEntry {
   rank: number;
   userId: string;
-  displayName: string;
+  username: string;
   guessCount: number;
   points: number;
   berserk: boolean;
@@ -47,7 +46,7 @@ export interface LeaderboardToday {
 export interface WeeklyLeaderboardEntry {
   rank: number;
   userId: string;
-  displayName: string;
+  username: string;
   totalPoints: number;
   gamesPlayed: number;
 }
