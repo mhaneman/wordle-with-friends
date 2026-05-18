@@ -37,7 +37,8 @@ ADMIN_PASSWORD=your-secure-admin-password
 
 - One puzzle per UTC calendar day, shared by all players
 - Six guesses maximum; answer is only revealed after win or loss
-- Leaderboard ranks winners by points: `7 − guesses` (1 guess = 6 pts, 6 guesses = 1 pt; ties by earlier finish)
+- Leaderboard ranks everyone who finished today’s puzzle by points; losses score **0**
+- Normal win: `7 − guesses` · **Berserk** (before first guess, 4 guesses max): `2 × (5 − guesses)`
 
 ## Project layout
 

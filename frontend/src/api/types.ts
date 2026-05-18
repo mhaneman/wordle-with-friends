@@ -14,21 +14,18 @@ export interface GuessRow {
 export interface GameToday {
   puzzleDate: string;
   maxGuesses: number;
+  berserk: boolean;
   guesses: GuessRow[];
   status: "in_progress" | "won" | "lost";
   guessCount?: number;
   points?: number;
 }
 
-export interface GuessResponse {
+export interface GuessResponse extends GameToday {
   word: string;
   states: LetterState[];
-  status: "in_progress" | "won" | "lost";
-  guesses: GuessRow[];
   guessNum: number;
   answer?: string;
-  guessCount?: number;
-  points?: number;
 }
 
 export interface LeaderboardEntry {
@@ -37,6 +34,7 @@ export interface LeaderboardEntry {
   displayName: string;
   guessCount: number;
   points: number;
+  berserk: boolean;
   completedAt: string;
 }
 

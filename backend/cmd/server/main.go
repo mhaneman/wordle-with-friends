@@ -87,6 +87,7 @@ func main() {
 			gr.Use(appmw.RequireAuth(tokens, st))
 			gr.Use(appmw.RateLimit(120, time.Minute))
 			gr.Get("/today", gameHandler.Today)
+			gr.Post("/berserk", gameHandler.Berserk)
 			gr.Post("/guess", gameHandler.Guess)
 		})
 

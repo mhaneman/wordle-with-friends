@@ -1,23 +1,28 @@
 import type { GuessRow, LetterState } from "../api/types";
 import { Tile } from "./Tile";
 
-const MAX_ROWS = 6;
-
 interface GridProps {
   guesses: GuessRow[];
   currentWord: string;
+  maxGuesses: number;
   shake?: boolean;
   revealingRow?: number | null;
 }
 
-export function Grid({ guesses, currentWord, shake, revealingRow }: GridProps) {
+export function Grid({
+  guesses,
+  currentWord,
+  maxGuesses,
+  shake,
+  revealingRow,
+}: GridProps) {
   const rows: Array<{
     letters: string[];
     states?: LetterState[];
     isCurrent: boolean;
   }> = [];
 
-  for (let i = 0; i < MAX_ROWS; i++) {
+  for (let i = 0; i < maxGuesses; i++) {
     if (i < guesses.length) {
       rows.push({
         letters: guesses[i].word.split(""),

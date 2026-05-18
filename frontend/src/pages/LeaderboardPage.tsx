@@ -28,7 +28,7 @@ export function LeaderboardPage() {
     <div className="w-full max-w-md">
       <h1 className="text-xl font-bold text-center mb-1">Leaderboard</h1>
       <p className="text-neutral-500 text-xs text-center mb-6">
-        {data.puzzleDate} · Most points wins (6 pts for 1 guess, 1 pt for 6)
+        {data.puzzleDate} · Ranked by points (Berserk wins count double)
       </p>
       {data.myRank != null && (
         <p className="text-correct text-sm text-center mb-4">
@@ -37,7 +37,7 @@ export function LeaderboardPage() {
       )}
       {data.entries.length === 0 ? (
         <p className="text-neutral-400 text-center text-sm">
-          No winners yet today. Be the first!
+          No completed games yet today.
         </p>
       ) : (
         <table className="w-full text-sm">
@@ -57,7 +57,14 @@ export function LeaderboardPage() {
                 }`}
               >
                 <td className="py-2.5 text-neutral-400">{e.rank}</td>
-                <td className="py-2.5 font-medium">{e.displayName}</td>
+                <td className="py-2.5 font-medium">
+                  {e.displayName}
+                  {e.berserk && (
+                    <span className="ml-1.5 text-amber-400 text-xs font-semibold">
+                      ⚡
+                    </span>
+                  )}
+                </td>
                 <td className="py-2.5 text-right font-bold">{e.points}</td>
               </tr>
             ))}

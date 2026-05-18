@@ -5,8 +5,6 @@ import type { GameToday, GuessResponse, GuessRow, LetterState } from "../api/typ
 import { Grid } from "../components/Grid";
 import { Keyboard } from "../components/Keyboard";
 
-const MAX_GUESSES = 6;
-
 export function GamePage() {
   const [game, setGame] = useState<GameToday | null>(null);
   const [currentWord, setCurrentWord] = useState("");
@@ -19,20 +17,28 @@ export function GamePage() {
   const [answer, setAnswer] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [berserking, setBerserking] = useState(false);
+
+  const maxGuesses = game?.maxGuesses ?? 6;
+  const berserk = game?.berserk ?? false;
+
+  const applyGameState = useCallback((data: GameToday) => {
+    setGame(data);
+    setGuesses(data.guesses ?? []);
+    setStatus(data.status);
+  }, []);
 
   const loadGame = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api<GameToday>("/api/v1/game/today");
-      setGame(data);
-      setGuesses(data.guesses ?? []);
-      setStatus(data.status);
+      applyGameState(data);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed to load game");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyGameState]);
 
   useEffect(() => {
     void loadGame();
@@ -57,6 +63,26 @@ export function GamePage() {
   }, [guesses]);
 
   const finished = status !== "in_progress";
+  const canBerserk = !finished && !berserk && guesses.length === 0;
+
+  async function handleBerserk() {
+    if (!canBerserk || berserking) return;
+    const ok = window.confirm(
+      "Go Berserk? You only get 4 guesses. Wins score 2×(5 − guesses) instead of 7 − guesses.",
+    );
+    if (!ok) return;
+    setBerserking(true);
+    setMessage("");
+    try {
+      const data = await api<GameToday>("/api/v1/game/berserk", { method: "POST" });
+      applyGameState(data);
+      setMessage("Berserk mode! 4 guesses, double points.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not go berserk");
+    } finally {
+      setBerserking(false);
+    }
+  }
 
   const handleKey = useCallback(
     async (key: string) => {
@@ -81,14 +107,14 @@ export function GamePage() {
           });
           setRevealingRow(guesses.length);
           setTimeout(() => {
-            setGuesses(res.guesses);
-            setStatus(res.status);
+            applyGameState(res);
             setCurrentWord("");
             setRevealingRow(null);
             if (res.answer) setAnswer(res.answer);
             if (res.status === "won") {
+              const berserkNote = res.berserk ? " (Berserk ×2)" : "";
               setMessage(
-                `You won in ${res.guessCount} guesses (${res.points} points)!`,
+                `You won in ${res.guessCount} guesses (${res.points} points${berserkNote})!`,
               );
             } else if (res.status === "lost") {
               setMessage(`The word was ${res.answer}`);
@@ -108,7 +134,7 @@ export function GamePage() {
         setMessage("");
       }
     },
-    [currentWord, finished, guesses.length, submitting, guesses],
+    [currentWord, finished, guesses.length, submitting, guesses, applyGameState],
   );
 
   useEffect(() => {
@@ -128,12 +154,28 @@ export function GamePage() {
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg">
-      <p className="text-neutral-500 text-xs mb-4 uppercase tracking-widest">
+      <p className="text-neutral-500 text-xs mb-2 uppercase tracking-widest">
         {game?.puzzleDate} · Daily puzzle
       </p>
+      {berserk && !finished && (
+        <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide mb-2">
+          Berserk · 4 guesses · 2×(5 − guesses)
+        </p>
+      )}
+      {canBerserk && (
+        <button
+          type="button"
+          disabled={berserking}
+          onClick={() => void handleBerserk()}
+          className="mb-4 px-4 py-1.5 text-sm font-bold uppercase tracking-wide rounded border border-amber-500/60 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
+        >
+          {berserking ? "…" : "Berserk"}
+        </button>
+      )}
       <Grid
         guesses={guesses}
         currentWord={finished ? "" : currentWord}
+        maxGuesses={maxGuesses}
         shake={shake}
         revealingRow={revealingRow}
       />
@@ -161,7 +203,7 @@ export function GamePage() {
         <p className="mt-6 text-neutral-500 text-sm">Answer: {answer}</p>
       )}
       <p className="mt-4 text-neutral-600 text-xs">
-        {guesses.length}/{MAX_GUESSES} guesses used
+        {guesses.length}/{maxGuesses} guesses used
       </p>
     </div>
   );

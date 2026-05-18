@@ -12,12 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const leaderboardMaxGuesses = 6
-
-func pointsFromGuessCount(guessCount int) int {
-	return leaderboardMaxGuesses + 1 - guessCount
-}
-
 var (
 	ErrNotFound      = errors.New("not found")
 	ErrEmailExists   = errors.New("email already exists")
@@ -43,6 +37,7 @@ type GameResult struct {
 	PuzzleDate  time.Time   `json:"puzzleDate"`
 	GuessCount  *int        `json:"guessCount"`
 	Won         bool        `json:"won"`
+	Berserk     bool        `json:"berserk"`
 	Guesses     []GuessRow  `json:"guesses"`
 	InProgress  bool        `json:"inProgress"`
 	CompletedAt *time.Time  `json:"completedAt"`
@@ -54,6 +49,7 @@ type LeaderboardEntry struct {
 	DisplayName string    `json:"displayName"`
 	GuessCount  int       `json:"guessCount"`
 	Points      int       `json:"points"`
+	Berserk     bool      `json:"berserk"`
 	CompletedAt time.Time `json:"completedAt"`
 }
 
@@ -147,19 +143,19 @@ func (s *Store) GetOrCreateGame(ctx context.Context, userID uuid.UUID, date time
 	var guessesJSON []byte
 	var puzzleDate time.Time
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, user_id, puzzle_date, guess_count, won, guesses, in_progress, completed_at
+		SELECT id, user_id, puzzle_date, guess_count, won, berserk, guesses, in_progress, completed_at
 		FROM game_results
 		WHERE user_id = $1 AND puzzle_date = $2::date
 	`, userID, date.Format("2006-01-02")).Scan(
-		&gr.ID, &gr.UserID, &puzzleDate, &gr.GuessCount, &gr.Won, &guessesJSON, &gr.InProgress, &gr.CompletedAt,
+		&gr.ID, &gr.UserID, &puzzleDate, &gr.GuessCount, &gr.Won, &gr.Berserk, &guessesJSON, &gr.InProgress, &gr.CompletedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = s.pool.QueryRow(ctx, `
 			INSERT INTO game_results (user_id, puzzle_date, guesses, in_progress)
 			VALUES ($1, $2::date, '[]'::jsonb, true)
-			RETURNING id, user_id, puzzle_date, guess_count, won, guesses, in_progress, completed_at
+			RETURNING id, user_id, puzzle_date, guess_count, won, berserk, guesses, in_progress, completed_at
 		`, userID, date.Format("2006-01-02")).Scan(
-			&gr.ID, &gr.UserID, &puzzleDate, &gr.GuessCount, &gr.Won, &guessesJSON, &gr.InProgress, &gr.CompletedAt,
+			&gr.ID, &gr.UserID, &puzzleDate, &gr.GuessCount, &gr.Won, &gr.Berserk, &guessesJSON, &gr.InProgress, &gr.CompletedAt,
 		)
 	}
 	if err != nil {
@@ -179,19 +175,54 @@ func (s *Store) UpdateGame(ctx context.Context, gr *GameResult) error {
 	}
 	_, err = s.pool.Exec(ctx, `
 		UPDATE game_results
-		SET guess_count = $2, won = $3, guesses = $4, in_progress = $5, completed_at = $6
+		SET guess_count = $2, won = $3, berserk = $4, guesses = $5, in_progress = $6, completed_at = $7
 		WHERE id = $1
-	`, gr.ID, gr.GuessCount, gr.Won, guessesJSON, gr.InProgress, gr.CompletedAt)
+	`, gr.ID, gr.GuessCount, gr.Won, gr.Berserk, guessesJSON, gr.InProgress, gr.CompletedAt)
 	return err
+}
+
+func (s *Store) SetGameBerserk(ctx context.Context, userID uuid.UUID, date time.Time) (*GameResult, error) {
+	gr, err := s.GetOrCreateGame(ctx, userID, date)
+	if err != nil {
+		return nil, err
+	}
+	if !gr.InProgress {
+		return nil, ErrGameFinished
+	}
+	if len(gr.Guesses) > 0 {
+		return nil, errors.New("cannot berserk after guessing")
+	}
+	if gr.Berserk {
+		return nil, errors.New("already berserk")
+	}
+	gr.Berserk = true
+	if err := s.UpdateGame(ctx, gr); err != nil {
+		return nil, err
+	}
+	return gr, nil
 }
 
 func (s *Store) GetLeaderboard(ctx context.Context, date time.Time, limit int) ([]LeaderboardEntry, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT u.id, u.display_name, gr.guess_count, gr.completed_at
+		SELECT
+			u.id,
+			u.display_name,
+			gr.berserk,
+			COALESCE(gr.guess_count, jsonb_array_length(gr.guesses)::int) AS guess_count,
+			CASE
+				WHEN gr.won AND gr.guess_count IS NOT NULL AND gr.berserk THEN
+					2 * (5 - gr.guess_count)
+				WHEN gr.won AND gr.guess_count IS NOT NULL THEN
+					7 - gr.guess_count
+				ELSE 0
+			END AS points,
+			gr.completed_at
 		FROM game_results gr
 		JOIN users u ON u.id = gr.user_id
-		WHERE gr.puzzle_date = $1::date AND gr.won = TRUE AND gr.guess_count IS NOT NULL
-		ORDER BY gr.guess_count ASC, gr.completed_at ASC
+		WHERE gr.puzzle_date = $1::date
+		  AND gr.in_progress = FALSE
+		  AND gr.completed_at IS NOT NULL
+		ORDER BY points DESC, gr.completed_at ASC
 		LIMIT $2
 	`, date.Format("2006-01-02"), limit)
 	if err != nil {
@@ -203,10 +234,9 @@ func (s *Store) GetLeaderboard(ctx context.Context, date time.Time, limit int) (
 	rank := 1
 	for rows.Next() {
 		var e LeaderboardEntry
-		if err := rows.Scan(&e.UserID, &e.DisplayName, &e.GuessCount, &e.CompletedAt); err != nil {
+		if err := rows.Scan(&e.UserID, &e.DisplayName, &e.Berserk, &e.GuessCount, &e.Points, &e.CompletedAt); err != nil {
 			return nil, err
 		}
-		e.Points = pointsFromGuessCount(e.GuessCount)
 		e.Rank = rank
 		rank++
 		entries = append(entries, e)
