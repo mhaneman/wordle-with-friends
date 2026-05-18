@@ -60,8 +60,10 @@ Set:
 
 ## 4. Start the stack
 
+Docker Compose only auto-loads `.env`, not `.env.production`. Always pass `--env-file` (or use `make prod-up`):
+
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
 First boot runs DB migrations automatically, then starts the API.
@@ -69,7 +71,7 @@ First boot runs DB migrations automatically, then starts the API.
 Check logs:
 
 ```bash
-docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml --env-file .env.production logs -f
 ```
 
 ## 5. Verify
@@ -84,7 +86,7 @@ docker compose -f docker-compose.prod.yml logs -f
 ```bash
 cd wordle-with-friends
 git pull
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
 ## Security notes (built into this stack)
@@ -101,14 +103,30 @@ docker compose -f docker-compose.prod.yml up -d --build
 **Certificate errors** — DNS must point to this server before Caddy can issue a cert. Wait for propagation, then restart Caddy:
 
 ```bash
-docker compose -f docker-compose.prod.yml restart caddy
+docker compose -f docker-compose.prod.yml --env-file .env.production restart caddy
 ```
 
-**502 from Caddy** — API or web not ready:
+**502 on login or `/api/*`** — Caddy is up but the API is not reachable (crashed, still starting, or wrong `DATABASE_URL`).
 
-```bash
-docker compose -f docker-compose.prod.yml ps
-docker compose -f docker-compose.prod.yml logs api
-```
+1. Check the API directly (should print `ok`):
 
-**Login works locally but not on VPS** — `CORS_ORIGIN` must exactly match `https://YOUR_DOMAIN` (scheme + host, no trailing slash).
+   ```bash
+   curl -sS https://YOUR_DOMAIN/health
+   ```
+
+2. Inspect containers and API logs:
+
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.production ps
+   docker compose -f docker-compose.prod.yml --env-file .env.production logs api --tail 80
+   ```
+
+   If `api` is **Restarting** or logs show `password authentication failed` / `DATABASE_URL and JWT_SECRET are required`, recreate the API with the env file loaded:
+
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build api
+   ```
+
+   `DATABASE_URL` is built from `POSTGRES_PASSWORD` at compose time. Running `up` without `--env-file` leaves an empty DB password in the URL while Postgres still has the real password → API never stays up → 502.
+
+**Login works locally but not on VPS** — `CORS_ORIGIN` must exactly match `https://YOUR_DOMAIN` (scheme + host, no trailing slash). Wrong CORS shows in the browser console as a CORS error, not 502.

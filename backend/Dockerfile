@@ -16,7 +16,8 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o /server ./cmd/server
 
 FROM golang:1.23-bookworm AS goose-bin
-RUN go install github.com/pressly/goose/v3/cmd/goose@v3.24.1
+# Static binary so goose runs on the Alpine prod image (glibc goose → "not found" on musl).
+RUN CGO_ENABLED=0 go install github.com/pressly/goose/v3/cmd/goose@v3.24.1
 
 FROM alpine:3.20 AS prod
 RUN apk add --no-cache ca-certificates

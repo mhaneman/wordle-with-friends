@@ -1,5 +1,6 @@
 # Production stack: Postgres (internal) + API + static web + Caddy (HTTPS).
-# Usage: cp .env.production.example .env.production && docker compose -f docker-compose.prod.yml up -d --build
+# Usage: cp .env.production.example .env.production
+#        docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 
 services:
   db:
