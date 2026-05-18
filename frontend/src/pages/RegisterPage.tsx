@@ -78,7 +78,7 @@ export function RegisterPage() {
         Request access
       </h1>
       <p className="text-neutral-400 text-sm text-center mb-6">
-        Wordle With Friends is invite-only. Pick a username; an admin will
+        The Secret Word is invite-only. Pick a username; an admin will
         approve you before you can log in. We&apos;ll generate a password for
         you to save.
       </p>

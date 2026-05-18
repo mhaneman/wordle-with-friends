@@ -1,4 +1,4 @@
-# Wordle With Friends
+# The Secret Word
 
 Daily Wordle with login, server-authoritative scoring, and a leaderboard ranked by fewest guesses.
 
