@@ -34,7 +34,7 @@ export function Keyboard({ keyStates, onKey, disabled }: KeyboardProps) {
   };
 
   return (
-    <div className="flex flex-col gap-1.5 mt-6 w-full max-w-lg">
+    <div className="flex flex-col gap-1.5 w-full max-w-lg mx-auto px-1">
       <div className="flex justify-center gap-1">
         {ROWS[0].split("").map((k) => renderKey(k))}
       </div>

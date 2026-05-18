@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { GameToday, GuessResponse, GuessRow, LetterState } from "../api/types";
+import { BerserkDialog } from "../components/BerserkDialog";
 import { Grid } from "../components/Grid";
 import { Keyboard } from "../components/Keyboard";
 
@@ -18,6 +19,7 @@ export function GamePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [berserking, setBerserking] = useState(false);
+  const [berserkDialogOpen, setBerserkDialogOpen] = useState(false);
 
   const maxGuesses = game?.maxGuesses ?? 6;
   const berserk = game?.berserk ?? false;
@@ -65,18 +67,15 @@ export function GamePage() {
   const finished = status !== "in_progress";
   const canBerserk = !finished && !berserk && guesses.length === 0;
 
-  async function handleBerserk() {
+  async function confirmBerserk() {
     if (!canBerserk || berserking) return;
-    const ok = window.confirm(
-      "Go Berserk? You only get 4 guesses. Wins score 2×(5 − guesses) instead of 7 − guesses.",
-    );
-    if (!ok) return;
     setBerserking(true);
     setMessage("");
     try {
       const data = await api<GameToday>("/api/v1/game/berserk", { method: "POST" });
       applyGameState(data);
-      setMessage("Berserk mode! 4 guesses, double points.");
+      setBerserkDialogOpen(false);
+      setMessage("Berserk mode — 4 guesses.");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Could not go berserk");
     } finally {
@@ -112,7 +111,7 @@ export function GamePage() {
             setRevealingRow(null);
             if (res.answer) setAnswer(res.answer);
             if (res.status === "won") {
-              const berserkNote = res.berserk ? " (Berserk ×2)" : "";
+              const berserkNote = res.berserk ? " (Berserk)" : "";
               setMessage(
                 `You won in ${res.guessCount} guesses (${res.points} points${berserkNote})!`,
               );
@@ -149,62 +148,83 @@ export function GamePage() {
   }, [finished, submitting, handleKey]);
 
   if (loading) {
-    return <p className="text-neutral-400">Loading today&apos;s puzzle…</p>;
+    return (
+      <p className="text-neutral-400 m-auto">Loading today&apos;s puzzle…</p>
+    );
   }
 
   return (
-    <div className="flex flex-col items-center w-full max-w-lg">
-      <p className="text-neutral-500 text-xs mb-2 uppercase tracking-widest">
-        {game?.puzzleDate} · Daily puzzle
-      </p>
-      {berserk && !finished && (
-        <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide mb-2">
-          Berserk · 4 guesses · 2×(5 − guesses)
+    <>
+    <BerserkDialog
+      open={berserkDialogOpen}
+      confirming={berserking}
+      onClose={() => setBerserkDialogOpen(false)}
+      onConfirm={() => void confirmBerserk()}
+    />
+    <div className="flex flex-col flex-1 min-h-0 w-full max-w-lg mx-auto">
+      <div className="flex-1 flex flex-col items-center min-h-0 overflow-y-auto w-full pb-2">
+        <p className="text-neutral-500 text-xs mb-2 uppercase tracking-widest shrink-0">
+          {game?.puzzleDate} · Daily puzzle
         </p>
-      )}
-      {canBerserk && (
-        <button
-          type="button"
-          disabled={berserking}
-          onClick={() => void handleBerserk()}
-          className="mb-4 px-4 py-1.5 text-sm font-bold uppercase tracking-wide rounded border border-amber-500/60 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
-        >
-          {berserking ? "…" : "Berserk"}
-        </button>
-      )}
-      <Grid
-        guesses={guesses}
-        currentWord={finished ? "" : currentWord}
-        maxGuesses={maxGuesses}
-        shake={shake}
-        revealingRow={revealingRow}
-      />
-      {message && (
-        <p className="mt-4 text-sm font-semibold text-center min-h-[1.25rem]">
-          {message}
-        </p>
-      )}
-      {finished && (
-        <Link
-          to="/leaderboard"
-          className="mt-2 text-sm text-correct hover:underline"
-        >
-          View today&apos;s leaderboard →
-        </Link>
-      )}
-      {!finished && (
-        <Keyboard
-          keyStates={keyStates}
-          onKey={(k) => void handleKey(k)}
-          disabled={submitting}
+        {berserk && !finished && (
+          <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide mb-2 shrink-0">
+            Berserk · 4 guesses
+          </p>
+        )}
+        {canBerserk && (
+          <button
+            type="button"
+            disabled={berserking}
+            onClick={() => setBerserkDialogOpen(true)}
+            className="mb-3 shrink-0 px-4 py-1.5 text-sm font-bold uppercase tracking-wide rounded border border-amber-500/60 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
+          >
+            Berserk
+          </button>
+        )}
+        <Grid
+          guesses={guesses}
+          currentWord={finished ? "" : currentWord}
+          maxGuesses={maxGuesses}
+          shake={shake}
+          revealingRow={revealingRow}
         />
+        {message && (
+          <p className="mt-3 text-sm font-semibold text-center min-h-[1.25rem] shrink-0 px-2">
+            {message}
+          </p>
+        )}
+        {finished && (
+          <>
+            <Link
+              to="/leaderboard"
+              className="mt-2 text-sm text-correct hover:underline shrink-0"
+            >
+              View today&apos;s leaderboard →
+            </Link>
+            {answer && (
+              <p className="mt-4 text-neutral-500 text-sm shrink-0">
+                Answer: {answer}
+              </p>
+            )}
+          </>
+        )}
+        <p className="mt-3 text-neutral-600 text-xs shrink-0 pb-1">
+          {guesses.length}/{maxGuesses} guesses used
+        </p>
+      </div>
+
+      {!finished && (
+        <div className="shrink-0 w-full mt-auto sticky bottom-0 z-10 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <Keyboard
+            keyStates={keyStates}
+            onKey={(k) => void handleKey(k)}
+            disabled={submitting}
+          />
+        </div>
       )}
-      {finished && answer && (
-        <p className="mt-6 text-neutral-500 text-sm">Answer: {answer}</p>
-      )}
-      <p className="mt-4 text-neutral-600 text-xs">
-        {guesses.length}/{maxGuesses} guesses used
-      </p>
     </div>
+    </>
   );
 }
+
+

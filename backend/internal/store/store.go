@@ -64,7 +64,7 @@ type WeeklyLeaderboardEntry struct {
 const gamePointsSQL = `
 	CASE
 		WHEN gr.won AND gr.guess_count IS NOT NULL AND gr.berserk THEN
-			2 * (5 - gr.guess_count)
+			9 - gr.guess_count
 		WHEN gr.won AND gr.guess_count IS NOT NULL THEN
 			7 - gr.guess_count
 		ELSE 0

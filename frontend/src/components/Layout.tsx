@@ -9,7 +9,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }`;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-1 flex-col min-h-0 w-full">
       <header className="border-b border-neutral-800 px-4 py-3 flex items-center justify-between max-w-lg mx-auto w-full">
         <nav className="flex gap-2">
           {user && (
@@ -44,7 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </header>
-      <main className="flex-1 flex flex-col items-center px-4 py-6">
+      <main className="flex-1 flex flex-col items-center min-h-0 w-full px-4 py-4 md:py-6">
         {children}
       </main>
     </div>

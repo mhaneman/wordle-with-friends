@@ -7,6 +7,17 @@
   --color-key: #818384;
 }
 
+html,
+body {
+  height: 100%;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
 body {
   font-family: system-ui, -apple-system, sans-serif;
 }

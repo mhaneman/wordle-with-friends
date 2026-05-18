@@ -13,10 +13,10 @@ func MaxGuessesForGame(berserk bool) int {
 }
 
 // PointsFromGuessCount returns leaderboard points.
-// Normal: 7 − guesses. Berserk win: 2 × (5 − guesses).
+// Normal: 7 − guesses. Berserk win: 9 − guesses.
 func PointsFromGuessCount(guessCount int, berserk bool) int {
 	if berserk {
-		return 2 * (5 - guessCount)
+		return 9 - guessCount
 	}
 	return MaxGuesses + 1 - guessCount
 }
