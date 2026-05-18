@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useLocation } from "react-router-dom";
 import { api } from "../api/client";
 
 interface AdminContextValue {
@@ -19,6 +20,7 @@ interface AdminContextValue {
 const AdminContext = createContext<AdminContextValue | null>(null);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -34,8 +36,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!location.pathname.startsWith("/admin")) {
+      setIsAdmin(false);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     void refresh();
-  }, [refresh]);
+  }, [location.pathname, refresh]);
 
   const login = useCallback(
     async (password: string) => {

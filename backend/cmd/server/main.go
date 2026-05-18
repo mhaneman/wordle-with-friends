@@ -82,9 +82,9 @@ func main() {
 
 	r.Route("/api/v1", func(api chi.Router) {
 		api.Route("/auth", func(ar chi.Router) {
-			ar.Use(appmw.RateLimit(30, time.Minute, cfg.TrustProxy))
-			ar.Post("/register", authHandler.Register)
-			ar.Post("/login", authHandler.Login)
+			// Brute-force protection on credential endpoints only (GET /me is uncapped).
+			ar.With(appmw.RateLimit(30, time.Minute, cfg.TrustProxy)).Post("/register", authHandler.Register)
+			ar.With(appmw.RateLimit(30, time.Minute, cfg.TrustProxy)).Post("/login", authHandler.Login)
 			ar.Post("/logout", authHandler.Logout)
 			ar.With(appmw.RequireAuth(tokens, st)).Get("/me", authHandler.Me)
 		})
@@ -104,13 +104,12 @@ func main() {
 		})
 
 		api.Route("/admin", func(ar chi.Router) {
-			ar.Use(appmw.RateLimit(10, time.Minute, cfg.TrustProxy))
-			ar.Post("/login", authHandler.AdminLogin)
+			ar.With(appmw.RateLimit(15, time.Minute, cfg.TrustProxy)).Post("/login", authHandler.AdminLogin)
 			ar.Post("/logout", authHandler.AdminLogout)
 			ar.Get("/me", authHandler.AdminMe)
 			ar.Get("/requests", authHandler.ListPendingRequests)
-			ar.Post("/requests/{id}/approve", authHandler.ApproveRequest)
-			ar.Post("/requests/{id}/reject", authHandler.RejectRequest)
+			ar.With(appmw.RateLimit(60, time.Minute, cfg.TrustProxy)).Post("/requests/{id}/approve", authHandler.ApproveRequest)
+			ar.With(appmw.RateLimit(60, time.Minute, cfg.TrustProxy)).Post("/requests/{id}/reject", authHandler.RejectRequest)
 		})
 	})
 

@@ -7,9 +7,13 @@ import (
 )
 
 // ClientIP returns the client address for rate limiting.
-// When trustProxy is true, prefers X-Real-IP then the first X-Forwarded-For hop.
+// When trustProxy is true, uses chi RealIP-adjusted RemoteAddr (see middleware.RealIP),
+// then X-Real-IP / X-Forwarded-For if the proxy did not update RemoteAddr.
 func ClientIP(r *http.Request, trustProxy bool) string {
 	if trustProxy {
+		if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil && host != "" {
+			return host
+		}
 		if ip := strings.TrimSpace(r.Header.Get("X-Real-IP")); ip != "" {
 			return ip
 		}
