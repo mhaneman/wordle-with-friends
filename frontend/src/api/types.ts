@@ -43,3 +43,18 @@ export interface LeaderboardToday {
   entries: LeaderboardEntry[];
   myRank?: number;
 }
+
+export interface WeeklyLeaderboardEntry {
+  rank: number;
+  userId: string;
+  displayName: string;
+  totalPoints: number;
+  gamesPlayed: number;
+}
+
+export interface LeaderboardWeek {
+  weekStart: string;
+  weekEnd: string;
+  entries: WeeklyLeaderboardEntry[];
+  myRank?: number;
+}

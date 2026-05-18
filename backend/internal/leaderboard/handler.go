@@ -3,6 +3,7 @@ package leaderboard
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/spaceclone/wordle-with-friends/backend/internal/auth"
 	"github.com/spaceclone/wordle-with-friends/backend/internal/game"
@@ -30,6 +31,33 @@ func (h *Handler) Today(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]interface{}{
 		"puzzleDate": date.Format("2006-01-02"),
 		"entries":    entries,
+	}
+	if user := auth.UserFromContext(r.Context()); user != nil {
+		for _, e := range entries {
+			if e.UserID == user.ID {
+				resp["myRank"] = e.Rank
+				break
+			}
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) Week(w http.ResponseWriter, r *http.Request) {
+	now := time.Now().UTC()
+	weekStart, weekEnd := game.WeekRangeUTC(now)
+	entries, err := h.store.GetWeeklyLeaderboard(r.Context(), weekStart, weekEnd, 50)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "leaderboard error")
+		return
+	}
+	if entries == nil {
+		entries = []store.WeeklyLeaderboardEntry{}
+	}
+	resp := map[string]interface{}{
+		"weekStart": weekStart.Format("2006-01-02"),
+		"weekEnd":   weekEnd.Format("2006-01-02"),
+		"entries":   entries,
 	}
 	if user := auth.UserFromContext(r.Context()); user != nil {
 		for _, e := range entries {

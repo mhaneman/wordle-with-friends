@@ -53,6 +53,23 @@ type LeaderboardEntry struct {
 	CompletedAt time.Time `json:"completedAt"`
 }
 
+type WeeklyLeaderboardEntry struct {
+	Rank        int       `json:"rank"`
+	UserID      uuid.UUID `json:"userId"`
+	DisplayName string    `json:"displayName"`
+	TotalPoints int       `json:"totalPoints"`
+	GamesPlayed int       `json:"gamesPlayed"`
+}
+
+const gamePointsSQL = `
+	CASE
+		WHEN gr.won AND gr.guess_count IS NOT NULL AND gr.berserk THEN
+			2 * (5 - gr.guess_count)
+		WHEN gr.won AND gr.guess_count IS NOT NULL THEN
+			7 - gr.guess_count
+		ELSE 0
+	END`
+
 type Store struct {
 	pool *pgxpool.Pool
 }
@@ -209,13 +226,7 @@ func (s *Store) GetLeaderboard(ctx context.Context, date time.Time, limit int) (
 			u.display_name,
 			gr.berserk,
 			COALESCE(gr.guess_count, jsonb_array_length(gr.guesses)::int) AS guess_count,
-			CASE
-				WHEN gr.won AND gr.guess_count IS NOT NULL AND gr.berserk THEN
-					2 * (5 - gr.guess_count)
-				WHEN gr.won AND gr.guess_count IS NOT NULL THEN
-					7 - gr.guess_count
-				ELSE 0
-			END AS points,
+			` + gamePointsSQL + ` AS points,
 			gr.completed_at
 		FROM game_results gr
 		JOIN users u ON u.id = gr.user_id
@@ -235,6 +246,42 @@ func (s *Store) GetLeaderboard(ctx context.Context, date time.Time, limit int) (
 	for rows.Next() {
 		var e LeaderboardEntry
 		if err := rows.Scan(&e.UserID, &e.DisplayName, &e.Berserk, &e.GuessCount, &e.Points, &e.CompletedAt); err != nil {
+			return nil, err
+		}
+		e.Rank = rank
+		rank++
+		entries = append(entries, e)
+	}
+	return entries, rows.Err()
+}
+
+func (s *Store) GetWeeklyLeaderboard(ctx context.Context, weekStart, weekEnd time.Time, limit int) ([]WeeklyLeaderboardEntry, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT
+			u.id,
+			u.display_name,
+			SUM(`+gamePointsSQL+`)::int AS total_points,
+			COUNT(*)::int AS games_played
+		FROM game_results gr
+		JOIN users u ON u.id = gr.user_id
+		WHERE gr.puzzle_date >= $1::date
+		  AND gr.puzzle_date <= $2::date
+		  AND gr.in_progress = FALSE
+		  AND gr.completed_at IS NOT NULL
+		GROUP BY u.id, u.display_name
+		ORDER BY total_points DESC, MIN(gr.completed_at) ASC
+		LIMIT $3
+	`, weekStart.Format("2006-01-02"), weekEnd.Format("2006-01-02"), limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []WeeklyLeaderboardEntry
+	rank := 1
+	for rows.Next() {
+		var e WeeklyLeaderboardEntry
+		if err := rows.Scan(&e.UserID, &e.DisplayName, &e.TotalPoints, &e.GamesPlayed); err != nil {
 			return nil, err
 		}
 		e.Rank = rank
