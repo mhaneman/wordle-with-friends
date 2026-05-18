@@ -15,10 +15,18 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -o /server ./cmd/server
 
-FROM gcr.io/distroless/static-debian12 AS prod
-WORKDIR /
-COPY --from=build /server /server
-COPY --from=build /app/migrations /migrations
-COPY --from=build /app/data /data
+FROM golang:1.23-bookworm AS goose-bin
+RUN go install github.com/pressly/goose/v3/cmd/goose@v3.24.1
+
+FROM alpine:3.20 AS prod
+RUN apk add --no-cache ca-certificates
+WORKDIR /app
+COPY --from=build /server /app/server
+COPY --from=build /app/migrations /app/migrations
+COPY --from=build /app/data /app/data
+COPY --from=goose-bin /go/bin/goose /usr/local/bin/goose
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+ENV DATA_DIR=/app/data
 EXPOSE 8080
-ENTRYPOINT ["/server"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

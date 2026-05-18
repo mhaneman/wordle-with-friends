@@ -13,7 +13,7 @@ type visitor struct {
 }
 
 // RateLimit is a simple per-IP in-memory limiter.
-func RateLimit(max int, window time.Duration) func(http.Handler) http.Handler {
+func RateLimit(max int, window time.Duration, trustProxy bool) func(http.Handler) http.Handler {
 	var mu sync.Mutex
 	visitors := make(map[string]*visitor)
 
@@ -32,7 +32,7 @@ func RateLimit(max int, window time.Duration) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ip := r.RemoteAddr
+			ip := ClientIP(r, trustProxy)
 			mu.Lock()
 			v, exists := visitors[ip]
 			if !exists {

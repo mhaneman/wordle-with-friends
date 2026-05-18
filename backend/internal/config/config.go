@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -12,6 +13,8 @@ type Config struct {
 	CORSOrigin    string
 	FrontendURL   string
 	AdminPassword string
+	CookieSecure  bool
+	TrustProxy    bool
 }
 
 func Load() Config {
@@ -26,7 +29,14 @@ func Load() Config {
 		CORSOrigin:    getenv("CORS_ORIGIN", "http://localhost:5173"),
 		FrontendURL:   getenv("FRONTEND_URL", "http://localhost:5173"),
 		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
+		CookieSecure:  envBool("COOKIE_SECURE") || os.Getenv("APP_ENV") == "production",
+		TrustProxy:    envBool("TRUST_PROXY"),
 	}
+}
+
+func envBool(key string) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	return v == "1" || v == "true" || v == "yes"
 }
 
 func (c Config) InviteOnlyEnabled() bool {

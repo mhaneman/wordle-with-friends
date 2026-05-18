@@ -1,4 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+// Empty VITE_API_URL in production → same-origin requests through Caddy (/api/...).
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "http://localhost:8080" : "");
 
 export async function api<T>(
   path: string,

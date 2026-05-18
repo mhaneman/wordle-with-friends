@@ -24,7 +24,7 @@ func (h *Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Password != h.cfg.AdminPassword {
+	if !adminPasswordMatches(h.cfg.AdminPassword, req.Password) {
 		writeError(w, http.StatusUnauthorized, "invalid password")
 		return
 	}
