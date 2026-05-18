@@ -15,7 +15,6 @@ export function GamePage() {
   const [shake, setShake] = useState(false);
   const [revealingRow, setRevealingRow] = useState<number | null>(null);
   const [keyStates, setKeyStates] = useState<Record<string, LetterState>>({});
-  const [answer, setAnswer] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [berserking, setBerserking] = useState(false);
@@ -109,14 +108,14 @@ export function GamePage() {
             applyGameState(res);
             setCurrentWord("");
             setRevealingRow(null);
-            if (res.answer) setAnswer(res.answer);
             if (res.status === "won") {
-              const berserkNote = res.berserk ? " (Berserk)" : "";
+              const n = res.guessCount ?? 0;
+              const guessLabel = n === 1 ? "guess" : "guesses";
               setMessage(
-                `You won in ${res.guessCount} guesses (${res.points} points${berserkNote})!`,
+                `You won in ${n} ${guessLabel}, you won ${res.points ?? 0} points.`,
               );
             } else if (res.status === "lost") {
-              setMessage(`The word was ${res.answer}`);
+              setMessage(res.answer ? `The word was ${res.answer}` : "Better luck tomorrow.");
             }
           }, 600);
         } catch (err) {
@@ -201,11 +200,6 @@ export function GamePage() {
             >
               View today&apos;s leaderboard →
             </Link>
-            {answer && (
-              <p className="mt-4 text-neutral-500 text-sm shrink-0">
-                Answer: {answer}
-              </p>
-            )}
           </>
         )}
         <p className="mt-3 text-neutral-600 text-xs shrink-0 pb-1">

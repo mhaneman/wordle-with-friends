@@ -150,7 +150,7 @@ func (h *Handler) Guess(w http.ResponseWriter, r *http.Request) {
 	resp["word"] = word
 	resp["states"] = stateStrs
 	resp["guessNum"] = len(gr.Guesses)
-	if gameStatus(gr) == "won" || gameStatus(gr) == "lost" {
+	if gameStatus(gr) == "lost" {
 		resp["answer"] = answer
 	}
 	writeJSON(w, http.StatusOK, resp)
