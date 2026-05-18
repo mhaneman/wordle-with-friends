@@ -33,7 +33,7 @@ export function LoginPage() {
   return (
     <div className="w-full max-w-sm">
       <h1 className="text-2xl font-bold text-center mb-6 tracking-wide">
-        WORDLE WITH FRIENDS
+        The Secret Word
       </h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
