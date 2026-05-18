@@ -28,7 +28,7 @@ export function LeaderboardPage() {
     <div className="w-full max-w-md">
       <h1 className="text-xl font-bold text-center mb-1">Leaderboard</h1>
       <p className="text-neutral-500 text-xs text-center mb-6">
-        {data.puzzleDate} · Fewest guesses wins
+        {data.puzzleDate} · Most points wins (6 pts for 1 guess, 1 pt for 6)
       </p>
       {data.myRank != null && (
         <p className="text-correct text-sm text-center mb-4">
@@ -45,7 +45,7 @@ export function LeaderboardPage() {
             <tr className="text-neutral-500 border-b border-neutral-800">
               <th className="py-2 text-left w-12">#</th>
               <th className="py-2 text-left">Player</th>
-              <th className="py-2 text-right w-16">Guesses</th>
+              <th className="py-2 text-right w-16">Points</th>
             </tr>
           </thead>
           <tbody>
@@ -58,7 +58,7 @@ export function LeaderboardPage() {
               >
                 <td className="py-2.5 text-neutral-400">{e.rank}</td>
                 <td className="py-2.5 font-medium">{e.displayName}</td>
-                <td className="py-2.5 text-right font-bold">{e.guessCount}</td>
+                <td className="py-2.5 text-right font-bold">{e.points}</td>
               </tr>
             ))}
           </tbody>

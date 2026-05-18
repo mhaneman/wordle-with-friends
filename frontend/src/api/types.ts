@@ -17,6 +17,7 @@ export interface GameToday {
   guesses: GuessRow[];
   status: "in_progress" | "won" | "lost";
   guessCount?: number;
+  points?: number;
 }
 
 export interface GuessResponse {
@@ -27,6 +28,7 @@ export interface GuessResponse {
   guessNum: number;
   answer?: string;
   guessCount?: number;
+  points?: number;
 }
 
 export interface LeaderboardEntry {
@@ -34,6 +36,7 @@ export interface LeaderboardEntry {
   userId: string;
   displayName: string;
   guessCount: number;
+  points: number;
   completedAt: string;
 }
 

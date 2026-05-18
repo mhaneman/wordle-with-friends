@@ -10,7 +10,7 @@ import (
 	"github.com/spaceclone/wordle-with-friends/backend/internal/store"
 )
 
-const maxGuesses = 6
+const maxGuesses = MaxGuesses
 
 type Handler struct {
 	store *store.Store
@@ -51,6 +51,7 @@ func (h *Handler) Today(w http.ResponseWriter, r *http.Request) {
 	if !gr.InProgress && gr.Won {
 		if gr.GuessCount != nil {
 			resp["guessCount"] = *gr.GuessCount
+			resp["points"] = PointsFromGuessCount(*gr.GuessCount)
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -142,6 +143,9 @@ func (h *Handler) Guess(w http.ResponseWriter, r *http.Request) {
 		resp["answer"] = answer
 		if gr.GuessCount != nil {
 			resp["guessCount"] = *gr.GuessCount
+			if status == "won" {
+				resp["points"] = PointsFromGuessCount(*gr.GuessCount)
+			}
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)

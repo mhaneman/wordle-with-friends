@@ -12,6 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const leaderboardMaxGuesses = 6
+
+func pointsFromGuessCount(guessCount int) int {
+	return leaderboardMaxGuesses + 1 - guessCount
+}
+
 var (
 	ErrNotFound      = errors.New("not found")
 	ErrEmailExists   = errors.New("email already exists")
@@ -47,6 +53,7 @@ type LeaderboardEntry struct {
 	UserID      uuid.UUID `json:"userId"`
 	DisplayName string    `json:"displayName"`
 	GuessCount  int       `json:"guessCount"`
+	Points      int       `json:"points"`
 	CompletedAt time.Time `json:"completedAt"`
 }
 
@@ -199,6 +206,7 @@ func (s *Store) GetLeaderboard(ctx context.Context, date time.Time, limit int) (
 		if err := rows.Scan(&e.UserID, &e.DisplayName, &e.GuessCount, &e.CompletedAt); err != nil {
 			return nil, err
 		}
+		e.Points = pointsFromGuessCount(e.GuessCount)
 		e.Rank = rank
 		rank++
 		entries = append(entries, e)

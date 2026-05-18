@@ -87,7 +87,9 @@ export function GamePage() {
             setRevealingRow(null);
             if (res.answer) setAnswer(res.answer);
             if (res.status === "won") {
-              setMessage(`You won in ${res.guessCount} guesses!`);
+              setMessage(
+                `You won in ${res.guessCount} guesses (${res.points} points)!`,
+              );
             } else if (res.status === "lost") {
               setMessage(`The word was ${res.answer}`);
             }
