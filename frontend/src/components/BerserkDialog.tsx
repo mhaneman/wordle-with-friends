@@ -65,9 +65,9 @@ export function BerserkDialog({
           Go Berserk?
         </h2>
         <p className="mt-2 text-sm text-neutral-300 text-center">
-          You get {BERSERK_MAX_GUESSES} guesses instead of {REGULAR_MAX_GUESSES}.
-          Solve the word and your score is in the Berserk column below. Use all{" "}
-          {BERSERK_MAX_GUESSES} without solving it and you score 0.
+          You have {BERSERK_MAX_GUESSES} guesses instead of {REGULAR_MAX_GUESSES}. 
+          Correctly solving the word earns you a score in the Berserk column. 
+          If you fail to solve it within {BERSERK_MAX_GUESSES} guesses, you score 0.
         </p>
 
         <div className="mt-4 overflow-hidden rounded border border-neutral-700">
