@@ -27,7 +27,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {user ? (
             <>
               <span className="text-neutral-400 hidden sm:inline">
-                {user.displayName}
+                {user.username}
               </span>
               <button
                 type="button"

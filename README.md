@@ -4,7 +4,7 @@ Daily Wordle with login, server-authoritative scoring, and a leaderboard ranked 
 
 ## Stack
 
-- **API:** Go (chi), PostgreSQL, JWT cookies, email/password auth
+- **API:** Go (chi), PostgreSQL, JWT cookies, username/password auth
 - **Web:** React, Vite, Tailwind CSS, **pnpm**
 - **Dev:** Docker Compose (no local `npm`/`pnpm` install required)
 
@@ -23,7 +23,7 @@ The `web` service runs `pnpm install` inside the container and keeps `node_modul
 
 ## Accounts (invite-only)
 
-Registration is **invite-only**. New users submit http://localhost:5173/register and wait for approval.
+Registration is **invite-only**. New users pick a username at http://localhost:5173/register; the site generates a password to save, then they wait for admin approval.
 
 **Admin dashboard:** http://localhost:5173/admin/login — approve or reject pending signups.
 

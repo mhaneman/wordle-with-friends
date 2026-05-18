@@ -117,7 +117,7 @@ function LeaderboardDailyTable({
           >
             <td className="py-2.5 text-neutral-400">{e.rank}</td>
             <td className="py-2.5 font-medium">
-              {e.displayName}
+              {e.username}
               {e.berserk && (
                 <span className="ml-1.5 text-amber-400 text-xs font-semibold">
                   ⚡
@@ -165,7 +165,7 @@ function LeaderboardWeeklyTable({
             }`}
           >
             <td className="py-2.5 text-neutral-400">{e.rank}</td>
-            <td className="py-2.5 font-medium">{e.displayName}</td>
+            <td className="py-2.5 font-medium">{e.username}</td>
             <td className="py-2.5 text-right font-bold">{e.totalPoints}</td>
             <td className="py-2.5 text-right text-neutral-400">
               {e.gamesPlayed}

@@ -1,42 +1,75 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import { CopyableSecret } from "../components/CopyableSecret";
 
 interface RegisterResponse {
   status: string;
   message: string;
+  username: string;
+  password: string;
+}
+
+interface RegistrationComplete {
+  username: string;
+  password: string;
+  message: string;
 }
 
 export function RegisterPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [complete, setComplete] = useState<RegistrationComplete | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
-    setSuccess("");
     setLoading(true);
     try {
       const res = await api<RegisterResponse>("/api/v1/auth/register", {
         method: "POST",
-        body: JSON.stringify({ email, password, displayName }),
+        body: JSON.stringify({ username: username.trim().toLowerCase() }),
       });
-      setSuccess(
-        res.message ??
-          "Registration submitted. You'll be able to log in after approval.",
-      );
-      setEmail("");
-      setPassword("");
-      setDisplayName("");
+      setComplete({
+        username: res.username,
+        password: res.password,
+        message: res.message,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (complete) {
+    return (
+      <div className="w-full max-w-sm">
+        <h1 className="text-2xl font-bold text-center mb-2 tracking-wide">
+          Request submitted
+        </h1>
+        <div className="rounded border border-correct/40 bg-correct/10 px-4 py-4 text-sm space-y-4">
+          <p className="text-neutral-200 text-center">{complete.message}</p>
+          <p className="text-neutral-400 text-center text-xs">
+            Log in as{" "}
+            <span className="text-white font-mono">{complete.username}</span>{" "}
+            after an admin approves you.
+          </p>
+          <CopyableSecret label="Your password" value={complete.password} />
+          <p className="text-amber-400/90 text-xs text-center">
+            Save this password now. You won&apos;t be able to see it again on
+            this site.
+          </p>
+        </div>
+        <Link
+          to="/login"
+          className="block text-center mt-6 text-correct hover:underline text-sm"
+        >
+          Back to log in
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -45,67 +78,41 @@ export function RegisterPage() {
         Request access
       </h1>
       <p className="text-neutral-400 text-sm text-center mb-6">
-        Wordle With Friends is invite-only. Submit your details; an admin will
-        approve you before you can log in.
+        Wordle With Friends is invite-only. Pick a username; an admin will
+        approve you before you can log in. We&apos;ll generate a password for
+        you to save.
       </p>
 
-      {success ? (
-        <div className="rounded border border-correct/40 bg-correct/10 px-4 py-3 text-sm text-center">
-          <p className="text-white font-medium mb-1">Request submitted</p>
-          <p className="text-neutral-300">{success}</p>
-          <Link
-            to="/login"
-            className="inline-block mt-4 text-correct hover:underline"
-          >
-            Back to log in
-          </Link>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Display name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2"
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password (8+ characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={8}
-            className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2"
-            required
-          />
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-correct hover:opacity-90 text-white font-bold py-2 rounded"
-          >
-            {loading ? "Submitting…" : "Request access"}
-          </button>
-        </form>
-      )}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <input
+          type="text"
+          placeholder="Username (letters, numbers, _)"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
+          className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2"
+          required
+          minLength={3}
+          maxLength={32}
+          pattern="[a-zA-Z0-9_]+"
+          title="3–32 characters: letters, numbers, and underscores only"
+        />
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-correct hover:opacity-90 text-white font-bold py-2 rounded"
+        >
+          {loading ? "Submitting…" : "Request access"}
+        </button>
+      </form>
 
-      {!success && (
-        <p className="text-neutral-400 text-sm text-center mt-6">
-          Already approved?{" "}
-          <Link to="/login" className="text-white underline">
-            Log in
-          </Link>
-        </p>
-      )}
+      <p className="text-neutral-400 text-sm text-center mt-6">
+        Already approved?{" "}
+        <Link to="/login" className="text-white underline">
+          Log in
+        </Link>
+      </p>
     </div>
   );
 }

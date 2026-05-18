@@ -24,13 +24,11 @@ func NewHandler(st *store.Store, tokens *TokenService, cfg config.Config) *Handl
 }
 
 type registerRequest struct {
-	Email       string `json:"email"`
-	Password    string `json:"password"`
-	DisplayName string `json:"displayName"`
+	Username string `json:"username"`
 }
 
 type loginRequest struct {
-	Email    string `json:"email"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -45,30 +43,35 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
-	req.DisplayName = strings.TrimSpace(req.DisplayName)
-	if req.Email == "" || req.DisplayName == "" || len(req.Password) < 8 {
-		writeError(w, http.StatusBadRequest, "email, display name, and password (8+ chars) required")
+	req.Username = strings.TrimSpace(strings.ToLower(req.Username))
+	if err := ValidateUsername(req.Username); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if _, err := h.store.FindUserByEmail(r.Context(), req.Email); err == nil {
-		writeError(w, http.StatusConflict, "email already registered")
+	if _, err := h.store.FindUserByUsername(r.Context(), req.Username); err == nil {
+		writeError(w, http.StatusConflict, "this username is already taken — try another")
 		return
 	} else if !errors.Is(err, store.ErrNotFound) {
 		writeError(w, http.StatusInternalServerError, "could not create account")
 		return
 	}
 
-	if _, err := h.store.FindPendingRegistrationByEmail(r.Context(), req.Email); err == nil {
-		writeError(w, http.StatusConflict, "a registration request is already pending for this email")
+	if _, err := h.store.FindPendingRegistrationByUsername(r.Context(), req.Username); err == nil {
+		writeError(w, http.StatusConflict, "this username already has a pending request — try another")
 		return
 	} else if !errors.Is(err, store.ErrNotFound) {
 		writeError(w, http.StatusInternalServerError, "could not create account")
 		return
 	}
 
-	hash, err := HashPassword(req.Password)
+	plainPassword, err := GeneratePassword()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not create account")
+		return
+	}
+
+	hash, err := HashPassword(plainPassword)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "could not create account")
 		return
@@ -80,10 +83,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.store.CreateRegistrationRequest(r.Context(), req.Email, req.DisplayName, hash, token)
+	_, err = h.store.CreateRegistrationRequest(r.Context(), req.Username, hash, token)
 	if err != nil {
-		if errors.Is(err, store.ErrEmailExists) {
-			writeError(w, http.StatusConflict, "a registration request is already pending for this email")
+		if errors.Is(err, store.ErrUsernameExists) {
+			writeError(w, http.StatusConflict, "this username already has a pending request — try another")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, "could not create account")
@@ -91,8 +94,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusAccepted, map[string]string{
-		"status":  "pending",
-		"message": "Your registration was submitted. You'll be able to log in after an admin approves your request.",
+		"status":   "pending",
+		"message":  "Your registration was submitted. Save your password below — it won't be shown again. You can log in after an admin approves your request.",
+		"username": req.Username,
+		"password": plainPassword,
 	})
 }
 
@@ -119,16 +124,16 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
+	req.Username = strings.TrimSpace(strings.ToLower(req.Username))
 
-	if pending, err := h.store.FindPendingRegistrationByEmail(r.Context(), req.Email); err == nil && pending != nil {
+	if pending, err := h.store.FindPendingRegistrationByUsername(r.Context(), req.Username); err == nil && pending != nil {
 		writeError(w, http.StatusForbidden, "your account is pending approval")
 		return
 	}
 
-	user, err := h.store.FindUserByEmail(r.Context(), req.Email)
+	user, err := h.store.FindUserByUsername(r.Context(), req.Username)
 	if errors.Is(err, store.ErrNotFound) || user.PasswordHash == nil || !CheckPassword(*user.PasswordHash, req.Password) {
-		writeError(w, http.StatusUnauthorized, "invalid email or password")
+		writeError(w, http.StatusUnauthorized, "invalid username or password")
 		return
 	}
 	if err != nil {
@@ -155,9 +160,8 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 
 func userResponse(u *store.User) map[string]interface{} {
 	return map[string]interface{}{
-		"id":          u.ID,
-		"email":       u.Email,
-		"displayName": u.DisplayName,
+		"id":       u.ID,
+		"username": u.Username,
 	}
 }
 

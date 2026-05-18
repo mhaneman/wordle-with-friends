@@ -13,8 +13,7 @@ var ErrRequestNotFound = errors.New("registration request not found")
 
 type RegistrationRequest struct {
 	ID           uuid.UUID
-	Email        string
-	DisplayName  string
+	Username     string
 	PasswordHash string
 	ApproveToken string
 	Status       string
@@ -23,39 +22,38 @@ type RegistrationRequest struct {
 }
 
 type RegistrationRequestPublic struct {
-	ID          uuid.UUID `json:"id"`
-	Email       string    `json:"email"`
-	DisplayName string    `json:"displayName"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
-func (s *Store) CreateRegistrationRequest(ctx context.Context, email, displayName, passwordHash, token string) (*RegistrationRequest, error) {
+func (s *Store) CreateRegistrationRequest(ctx context.Context, username, passwordHash, token string) (*RegistrationRequest, error) {
 	var rr RegistrationRequest
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO registration_requests (email, display_name, password_hash, approve_token)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, email, display_name, password_hash, approve_token, status, created_at, reviewed_at
-	`, email, displayName, passwordHash, token).Scan(
-		&rr.ID, &rr.Email, &rr.DisplayName, &rr.PasswordHash, &rr.ApproveToken,
+		INSERT INTO registration_requests (username, password_hash, approve_token)
+		VALUES ($1, $2, $3)
+		RETURNING id, username, password_hash, approve_token, status, created_at, reviewed_at
+	`, username, passwordHash, token).Scan(
+		&rr.ID, &rr.Username, &rr.PasswordHash, &rr.ApproveToken,
 		&rr.Status, &rr.CreatedAt, &rr.ReviewedAt,
 	)
 	if err != nil {
 		if isUniqueViolation(err) {
-			return nil, ErrEmailExists
+			return nil, ErrUsernameExists
 		}
 		return nil, err
 	}
 	return &rr, nil
 }
 
-func (s *Store) FindPendingRegistrationByEmail(ctx context.Context, email string) (*RegistrationRequest, error) {
+func (s *Store) FindPendingRegistrationByUsername(ctx context.Context, username string) (*RegistrationRequest, error) {
 	var rr RegistrationRequest
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, email, display_name, password_hash, approve_token, status, created_at, reviewed_at
+		SELECT id, username, password_hash, approve_token, status, created_at, reviewed_at
 		FROM registration_requests
-		WHERE email = $1 AND status = 'pending'
-	`, email).Scan(
-		&rr.ID, &rr.Email, &rr.DisplayName, &rr.PasswordHash, &rr.ApproveToken,
+		WHERE username = $1 AND status = 'pending'
+	`, username).Scan(
+		&rr.ID, &rr.Username, &rr.PasswordHash, &rr.ApproveToken,
 		&rr.Status, &rr.CreatedAt, &rr.ReviewedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -67,11 +65,11 @@ func (s *Store) FindPendingRegistrationByEmail(ctx context.Context, email string
 func (s *Store) FindRegistrationByID(ctx context.Context, id uuid.UUID) (*RegistrationRequest, error) {
 	var rr RegistrationRequest
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, email, display_name, password_hash, approve_token, status, created_at, reviewed_at
+		SELECT id, username, password_hash, approve_token, status, created_at, reviewed_at
 		FROM registration_requests
 		WHERE id = $1
 	`, id).Scan(
-		&rr.ID, &rr.Email, &rr.DisplayName, &rr.PasswordHash, &rr.ApproveToken,
+		&rr.ID, &rr.Username, &rr.PasswordHash, &rr.ApproveToken,
 		&rr.Status, &rr.CreatedAt, &rr.ReviewedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -82,7 +80,7 @@ func (s *Store) FindRegistrationByID(ctx context.Context, id uuid.UUID) (*Regist
 
 func (s *Store) ListPendingRegistrations(ctx context.Context) ([]RegistrationRequestPublic, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT id, email, display_name, created_at
+		SELECT id, username, created_at
 		FROM registration_requests
 		WHERE status = 'pending'
 		ORDER BY created_at ASC
@@ -95,7 +93,7 @@ func (s *Store) ListPendingRegistrations(ctx context.Context) ([]RegistrationReq
 	var list []RegistrationRequestPublic
 	for rows.Next() {
 		var item RegistrationRequestPublic
-		if err := rows.Scan(&item.ID, &item.Email, &item.DisplayName, &item.CreatedAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.Username, &item.CreatedAt); err != nil {
 			return nil, err
 		}
 		list = append(list, item)
@@ -112,12 +110,12 @@ func (s *Store) ApproveRegistration(ctx context.Context, requestID uuid.UUID) (*
 
 	var rr RegistrationRequest
 	err = tx.QueryRow(ctx, `
-		SELECT id, email, display_name, password_hash, approve_token, status, created_at, reviewed_at
+		SELECT id, username, password_hash, approve_token, status, created_at, reviewed_at
 		FROM registration_requests
 		WHERE id = $1
 		FOR UPDATE
 	`, requestID).Scan(
-		&rr.ID, &rr.Email, &rr.DisplayName, &rr.PasswordHash, &rr.ApproveToken,
+		&rr.ID, &rr.Username, &rr.PasswordHash, &rr.ApproveToken,
 		&rr.Status, &rr.CreatedAt, &rr.ReviewedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -132,11 +130,11 @@ func (s *Store) ApproveRegistration(ctx context.Context, requestID uuid.UUID) (*
 
 	var u User
 	err = tx.QueryRow(ctx, `
-		INSERT INTO users (email, display_name, password_hash)
-		VALUES ($1, $2, $3)
-		RETURNING id, email, display_name, password_hash, created_at
-	`, rr.Email, rr.DisplayName, rr.PasswordHash).Scan(
-		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &u.CreatedAt,
+		INSERT INTO users (username, password_hash)
+		VALUES ($1, $2)
+		RETURNING id, username, password_hash, created_at
+	`, rr.Username, rr.PasswordHash).Scan(
+		&u.ID, &u.Username, &u.PasswordHash, &u.CreatedAt,
 	)
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -148,7 +146,7 @@ func (s *Store) ApproveRegistration(ctx context.Context, requestID uuid.UUID) (*
 			if commitErr := tx.Commit(ctx); commitErr != nil {
 				return nil, commitErr
 			}
-			return s.FindUserByEmail(ctx, rr.Email)
+			return s.FindUserByUsername(ctx, rr.Username)
 		}
 		return nil, err
 	}
