@@ -91,7 +91,7 @@ func main() {
 		})
 
 		api.Route("/leaderboard", func(lr chi.Router) {
-			lr.Use(appmw.OptionalAuth(tokens, st))
+			lr.Use(appmw.RequireAuth(tokens, st))
 			lr.Get("/today", lbHandler.Today)
 		})
 

@@ -12,12 +12,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-neutral-800 px-4 py-3 flex items-center justify-between max-w-lg mx-auto w-full">
         <nav className="flex gap-2">
-          <NavLink to="/" className={linkClass} end>
-            Play
-          </NavLink>
-          <NavLink to="/leaderboard" className={linkClass}>
-            Leaderboard
-          </NavLink>
+          {user && (
+            <>
+              <NavLink to="/" className={linkClass} end>
+                Play
+              </NavLink>
+              <NavLink to="/leaderboard" className={linkClass}>
+                Leaderboard
+              </NavLink>
+            </>
+          )}
         </nav>
         <div className="flex items-center gap-3 text-sm">
           {user ? (
