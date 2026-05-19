@@ -11,10 +11,11 @@ const keyColors: Record<LetterState, string> = {
 interface KeyboardProps {
   keyStates: Record<string, LetterState>;
   onKey: (key: string) => void;
-  disabled?: boolean;
+  /** Block input without dimming keys (avoids flash on submit). */
+  inactive?: boolean;
 }
 
-export function Keyboard({ keyStates, onKey, disabled }: KeyboardProps) {
+export function Keyboard({ keyStates, onKey, inactive }: KeyboardProps) {
   const renderKey = (k: string, wide = false) => {
     const state = keyStates[k];
     const base =
@@ -24,9 +25,8 @@ export function Keyboard({ keyStates, onKey, disabled }: KeyboardProps) {
       <button
         key={k}
         type="button"
-        disabled={disabled}
         onClick={() => onKey(k)}
-        className={`${base} ${color} ${wide ? "px-4 h-14 text-xs" : "w-10 h-14 text-sm"} disabled:opacity-50`}
+        className={`${base} ${color} ${wide ? "px-4 h-14 text-xs" : "w-10 h-14 text-sm"} active:brightness-90`}
       >
         {k === "enter" ? "Enter" : k === "back" ? "⌫" : k}
       </button>
@@ -34,7 +34,9 @@ export function Keyboard({ keyStates, onKey, disabled }: KeyboardProps) {
   };
 
   return (
-    <div className="flex flex-col gap-1.5 w-full max-w-lg mx-auto px-1">
+    <div
+      className={`flex flex-col gap-1.5 w-full max-w-lg mx-auto px-1${inactive ? " pointer-events-none" : ""}`}
+    >
       <div className="flex justify-center gap-1">
         {ROWS[0].split("").map((k) => renderKey(k))}
       </div>

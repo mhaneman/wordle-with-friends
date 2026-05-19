@@ -110,6 +110,7 @@ export function GamePage() {
             applyGameState(res);
             setCurrentWord("");
             setRevealingRow(null);
+            setSubmitting(false);
             if (res.status === "won") {
               const n = res.guessCount ?? 0;
               const guessLabel = n === 1 ? "guess" : "guesses";
@@ -124,7 +125,6 @@ export function GamePage() {
           setMessage(err instanceof Error ? err.message : "Invalid guess");
           setShake(true);
           setTimeout(() => setShake(false), 400);
-        } finally {
           setSubmitting(false);
         }
         return;
@@ -217,7 +217,7 @@ export function GamePage() {
           <Keyboard
             keyStates={keyStates}
             onKey={(k) => void handleKey(k)}
-            disabled={submitting}
+            inactive={submitting}
           />
         </div>
       )}
