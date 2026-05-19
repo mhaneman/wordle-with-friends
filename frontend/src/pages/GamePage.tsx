@@ -189,6 +189,8 @@ export function GamePage() {
           guesses={guesses}
           currentWord={finished ? "" : currentWord}
           maxGuesses={maxGuesses}
+          berserk={berserk}
+          status={status}
           shake={shake}
           revealingRow={revealingRow}
         />
