@@ -1,9 +1,14 @@
 import { Navigate } from "react-router-dom";
 import { useAdmin } from "../hooks/useAdmin";
+import { useDelayedLoading } from "../hooks/useDelayedLoading";
 
 export function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin, loading } = useAdmin();
-  if (loading) {
+  const showLoading = useDelayedLoading(loading);
+  if (loading && !showLoading) {
+    return null;
+  }
+  if (showLoading) {
     return <p className="text-neutral-400 text-sm mt-12">Loading…</p>;
   }
   if (!isAdmin) {

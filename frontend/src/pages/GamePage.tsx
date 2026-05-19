@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useDelayedLoading } from "../hooks/useDelayedLoading";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { GameToday, GuessResponse, GuessRow, LetterState } from "../api/types";
@@ -16,6 +17,7 @@ export function GamePage() {
   const [revealingRow, setRevealingRow] = useState<number | null>(null);
   const [keyStates, setKeyStates] = useState<Record<string, LetterState>>({});
   const [loading, setLoading] = useState(true);
+  const showLoading = useDelayedLoading(loading);
   const [submitting, setSubmitting] = useState(false);
   const [berserking, setBerserking] = useState(false);
   const [berserkDialogOpen, setBerserkDialogOpen] = useState(false);
@@ -146,7 +148,10 @@ export function GamePage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [finished, submitting, handleKey]);
 
-  if (loading) {
+  if (loading && !showLoading) {
+    return null;
+  }
+  if (showLoading) {
     return (
       <p className="text-neutral-400 m-auto">Loading today&apos;s puzzle…</p>
     );

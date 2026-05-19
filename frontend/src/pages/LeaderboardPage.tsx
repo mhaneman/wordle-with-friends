@@ -5,6 +5,7 @@ import type {
   LeaderboardWeek,
 } from "../api/types";
 import { useAuth } from "../hooks/useAuth";
+import { useDelayedLoading } from "../hooks/useDelayedLoading";
 
 type Period = "today" | "week";
 
@@ -23,8 +24,15 @@ export function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
+  const periodData = period === "today" ? today : week;
+  // Only show loading when there is nothing to display yet (not on tab refresh).
+  const showLoading = useDelayedLoading(loading && periodData == null);
+
   useEffect(() => {
-    setLoading(true);
+    const hasCached = (period === "today" ? today : week) != null;
+    if (!hasCached) {
+      setLoading(true);
+    }
     setError("");
     const load =
       period === "today"
@@ -35,6 +43,8 @@ export function LeaderboardPage() {
         setError(err instanceof Error ? err.message : "Failed to load"),
       )
       .finally(() => setLoading(false));
+    // Refetch when the tab changes only; today/week are read for cache check.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [period]);
 
   const myRank = period === "today" ? today?.myRank : week?.myRank;
@@ -70,14 +80,16 @@ export function LeaderboardPage() {
         </p>
       )}
 
-      {loading && <p className="text-neutral-400 text-center">Loading…</p>}
+      {showLoading && (
+        <p className="text-neutral-400 text-center">Loading…</p>
+      )}
       {error && <p className="text-red-400 text-center text-sm">{error}</p>}
 
-      {!loading && !error && period === "today" && today && (
+      {!error && period === "today" && today && (
         <LeaderboardDailyTable entries={today.entries} userId={user?.id} />
       )}
 
-      {!loading && !error && period === "week" && week && (
+      {!error && period === "week" && week && (
         <LeaderboardWeeklyTable entries={week.entries} userId={user?.id} />
       )}
     </div>

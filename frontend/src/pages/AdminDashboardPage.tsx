@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAdmin } from "../hooks/useAdmin";
+import { useDelayedLoading } from "../hooks/useDelayedLoading";
 
 interface PendingRequest {
   id: string;
@@ -13,6 +14,7 @@ export function AdminDashboardPage() {
   const { logout } = useAdmin();
   const [requests, setRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const showLoading = useDelayedLoading(loading);
   const [error, setError] = useState("");
   const [acting, setActing] = useState<string | null>(null);
 
@@ -80,9 +82,9 @@ export function AdminDashboardPage() {
 
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
-        {loading ? (
+        {showLoading ? (
           <p className="text-neutral-400">Loading…</p>
-        ) : requests.length === 0 ? (
+        ) : !loading && requests.length === 0 ? (
           <p className="text-neutral-400">No pending requests.</p>
         ) : (
           <ul className="space-y-3">
