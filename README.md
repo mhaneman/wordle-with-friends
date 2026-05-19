@@ -35,9 +35,9 @@ ADMIN_PASSWORD=your-secure-admin-password
 
 ## Game rules
 
-- One puzzle per UTC calendar day, shared by all players
+- One puzzle per calendar day in **US Pacific** (`America/Los_Angeles`), shared by all players
 - Six guesses maximum; answer is only revealed after win or loss
-- **Daily** leaderboard: today’s puzzle; **weekly** leaderboard: sum of Mon–Sun (UTC) points
+- **Daily** leaderboard: today’s puzzle; **weekly** leaderboard: sum of Mon–Sun (Pacific) points
 - Leaderboard ranks everyone who finished by points; losses score **0**
 - Normal win: `7 − guesses` · **Berserk** (before first guess, 4 guesses max): `9 − guesses`
 

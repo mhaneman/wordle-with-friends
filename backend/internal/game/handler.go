@@ -20,18 +20,13 @@ func NewHandler(st *store.Store, dict *Dictionary) *Handler {
 	return &Handler{store: st, dict: dict}
 }
 
-func TodayUTC() time.Time {
-	now := time.Now().UTC()
-	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-}
-
 func (h *Handler) Today(w http.ResponseWriter, r *http.Request) {
 	user := auth.UserFromContext(r.Context())
 	if user == nil {
 		writeError(w, http.StatusUnauthorized, "not authenticated")
 		return
 	}
-	date := TodayUTC()
+	date := TodayPuzzleDate()
 	if err := h.ensurePuzzle(r, date); err != nil {
 		writeError(w, http.StatusInternalServerError, "puzzle error")
 		return
@@ -50,7 +45,7 @@ func (h *Handler) Berserk(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "not authenticated")
 		return
 	}
-	date := TodayUTC()
+	date := TodayPuzzleDate()
 	if err := h.ensurePuzzle(r, date); err != nil {
 		writeError(w, http.StatusInternalServerError, "puzzle error")
 		return
@@ -96,7 +91,7 @@ func (h *Handler) Guess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	date := TodayUTC()
+	date := TodayPuzzleDate()
 	if err := h.ensurePuzzle(r, date); err != nil {
 		writeError(w, http.StatusInternalServerError, "puzzle error")
 		return

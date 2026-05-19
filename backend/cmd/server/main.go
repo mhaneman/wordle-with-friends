@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	_ "time/tzdata" // zoneinfo for America/Los_Angeles in Alpine prod images
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"

@@ -3,7 +3,6 @@ package leaderboard
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/spaceclone/wordle-with-friends/backend/internal/auth"
 	"github.com/spaceclone/wordle-with-friends/backend/internal/game"
@@ -19,7 +18,7 @@ func NewHandler(st *store.Store) *Handler {
 }
 
 func (h *Handler) Today(w http.ResponseWriter, r *http.Request) {
-	date := game.TodayUTC()
+	date := game.TodayPuzzleDate()
 	entries, err := h.store.GetLeaderboard(r.Context(), date, 50)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "leaderboard error")
@@ -44,8 +43,7 @@ func (h *Handler) Today(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Week(w http.ResponseWriter, r *http.Request) {
-	now := time.Now().UTC()
-	weekStart, weekEnd := game.WeekRangeUTC(now)
+	weekStart, weekEnd := game.WeekRange(time.Now())
 	entries, err := h.store.GetWeeklyLeaderboard(r.Context(), weekStart, weekEnd, 50)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "leaderboard error")
