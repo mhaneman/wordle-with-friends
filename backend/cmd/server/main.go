@@ -71,7 +71,7 @@ func main() {
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{cfg.CORSOrigin},
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           300,
@@ -112,6 +112,8 @@ func main() {
 			ar.Get("/requests", authHandler.ListPendingRequests)
 			ar.With(appmw.RateLimit(60, time.Minute, cfg.TrustProxy)).Post("/requests/{id}/approve", authHandler.ApproveRequest)
 			ar.With(appmw.RateLimit(60, time.Minute, cfg.TrustProxy)).Post("/requests/{id}/reject", authHandler.RejectRequest)
+			ar.Get("/players", authHandler.ListPlayers)
+			ar.With(appmw.RateLimit(30, time.Minute, cfg.TrustProxy)).Delete("/players/{id}", authHandler.DeletePlayer)
 		})
 	})
 

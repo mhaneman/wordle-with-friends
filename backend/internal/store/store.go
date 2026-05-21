@@ -134,6 +134,39 @@ func (s *Store) FindUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	return &u, err
 }
 
+func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id, username, password_hash, created_at
+		FROM users
+		ORDER BY username ASC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
+}
+
+func (s *Store) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM users WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (s *Store) EnsureDailyPuzzle(ctx context.Context, date time.Time, word string) error {
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO daily_puzzles (puzzle_date, word)

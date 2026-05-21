@@ -10,22 +10,32 @@ interface PendingRequest {
   createdAt: string;
 }
 
+interface Player {
+  id: string;
+  username: string;
+  createdAt: string;
+}
+
 export function AdminDashboardPage() {
   const { logout } = useAdmin();
   const [requests, setRequests] = useState<PendingRequest[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const showLoading = useDelayedLoading(loading);
   const [error, setError] = useState("");
   const [acting, setActing] = useState<string | null>(null);
+  const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await api<{ requests: PendingRequest[] }>(
-        "/api/v1/admin/requests",
-      );
-      setRequests(data.requests ?? []);
+      const [reqData, playerData] = await Promise.all([
+        api<{ requests: PendingRequest[] }>("/api/v1/admin/requests"),
+        api<{ players: Player[] }>("/api/v1/admin/players"),
+      ]);
+      setRequests(reqData.requests ?? []);
+      setPlayers(playerData.players ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -61,11 +71,31 @@ export function AdminDashboardPage() {
     }
   }
 
+  async function removePlayer(id: string, username: string) {
+    if (
+      !window.confirm(
+        `Delete "${username}"? Their account and game history will be removed permanently.`,
+      )
+    ) {
+      return;
+    }
+    setDeletingPlayerId(id);
+    setError("");
+    try {
+      await api(`/api/v1/admin/players/${id}`, { method: "DELETE" });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeletingPlayerId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white px-4 py-8">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-xl font-bold">Registration requests</h1>
+          <h1 className="text-xl font-bold">Admin</h1>
           <div className="flex gap-3 text-sm">
             <Link to="/" className="text-neutral-400 hover:text-white">
               App
@@ -82,45 +112,85 @@ export function AdminDashboardPage() {
 
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
-        {showLoading ? (
-          <p className="text-neutral-400">Loading…</p>
-        ) : !loading && requests.length === 0 ? (
-          <p className="text-neutral-400">No pending requests.</p>
-        ) : (
-          <ul className="space-y-3">
-            {requests.map((req) => (
-              <li
-                key={req.id}
-                className="border border-neutral-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-              >
-                <div>
-                  <p className="font-semibold font-mono">{req.username}</p>
-                  <p className="text-neutral-600 text-xs mt-1">
-                    {new Date(req.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <div className="flex gap-2 shrink-0">
+        <section className="mb-10">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400 mb-3">
+            Registration requests
+          </h2>
+          {showLoading ? (
+            <p className="text-neutral-400">Loading…</p>
+          ) : !loading && requests.length === 0 ? (
+            <p className="text-neutral-400">No pending requests.</p>
+          ) : (
+            <ul className="space-y-3">
+              {requests.map((req) => (
+                <li
+                  key={req.id}
+                  className="border border-neutral-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                >
+                  <div>
+                    <p className="font-semibold font-mono">{req.username}</p>
+                    <p className="text-neutral-600 text-xs mt-1">
+                      {new Date(req.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      type="button"
+                      disabled={acting === req.id}
+                      onClick={() => void approve(req.id)}
+                      className="px-3 py-1.5 rounded bg-correct text-white text-sm font-semibold disabled:opacity-50"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      disabled={acting === req.id}
+                      onClick={() => void reject(req.id)}
+                      className="px-3 py-1.5 rounded border border-neutral-600 text-sm hover:bg-neutral-900 disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400 mb-3">
+            Players
+          </h2>
+          {showLoading ? (
+            <p className="text-neutral-400">Loading…</p>
+          ) : !loading && players.length === 0 ? (
+            <p className="text-neutral-400">No players yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {players.map((player) => (
+                <li
+                  key={player.id}
+                  className="border border-neutral-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                >
+                  <div>
+                    <p className="font-semibold font-mono">{player.username}</p>
+                    <p className="text-neutral-600 text-xs mt-1">
+                      Joined {new Date(player.createdAt).toLocaleString()}
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    disabled={acting === req.id}
-                    onClick={() => void approve(req.id)}
-                    className="px-3 py-1.5 rounded bg-correct text-white text-sm font-semibold disabled:opacity-50"
+                    disabled={deletingPlayerId === player.id}
+                    onClick={() => void removePlayer(player.id, player.username)}
+                    className="px-3 py-1.5 rounded border border-red-500/60 text-red-400 text-sm font-semibold hover:bg-red-500/10 disabled:opacity-50 shrink-0"
                   >
-                    Approve
+                    Delete
                   </button>
-                  <button
-                    type="button"
-                    disabled={acting === req.id}
-                    onClick={() => void reject(req.id)}
-                    className="px-3 py-1.5 rounded border border-neutral-600 text-sm hover:bg-neutral-900 disabled:opacity-50"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );

@@ -121,6 +121,47 @@ func (h *Handler) RejectRequest(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+func (h *Handler) ListPlayers(w http.ResponseWriter, r *http.Request) {
+	if !h.isAdmin(r) {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+	users, err := h.store.ListUsers(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not load players")
+		return
+	}
+	if users == nil {
+		users = []store.User{}
+	}
+	list := make([]map[string]interface{}, 0, len(users))
+	for _, u := range users {
+		list = append(list, userResponse(&u))
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"players": list})
+}
+
+func (h *Handler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
+	if !h.isAdmin(r) {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if err := h.store.DeleteUser(r.Context(), id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "player not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "could not delete player")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Handler) isAdmin(r *http.Request) bool {
 	token := AdminTokenFromRequest(r)
 	if token == "" {

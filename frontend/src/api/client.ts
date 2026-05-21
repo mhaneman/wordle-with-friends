@@ -7,13 +7,17 @@ export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const hasBody = options.body != null && options.body !== "";
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> | undefined),
+  };
+  if (hasBody && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
+    headers,
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
