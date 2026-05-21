@@ -19,14 +19,17 @@ export function Keyboard({ keyStates, onKey, inactive }: KeyboardProps) {
   const renderKey = (k: string, wide = false) => {
     const state = keyStates[k];
     const base =
-      "rounded font-bold uppercase text-white flex items-center justify-center select-none";
+      "rounded font-bold uppercase text-white flex items-center justify-center select-none transition-colors duration-75";
     const color = state ? keyColors[state] : "bg-key";
+    const pressed = state
+      ? "active:brightness-[0.72]"
+      : "active:bg-neutral-600";
     return (
       <button
         key={k}
         type="button"
         onClick={() => onKey(k)}
-        className={`${base} ${color} ${wide ? "px-4 h-14 text-xs" : "w-10 h-14 text-sm"} active:brightness-90`}
+        className={`${base} ${color} ${pressed} ${wide ? "px-4 h-14 text-xs" : "w-10 h-14 text-sm"}`}
       >
         {k === "enter" ? "Enter" : k === "back" ? "⌫" : k}
       </button>
