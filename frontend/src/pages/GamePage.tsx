@@ -188,7 +188,7 @@ export function GamePage() {
     <div className="flex flex-col flex-1 min-h-0 w-full max-w-lg mx-auto">
       <div className="flex-1 flex flex-col items-center min-h-0 overflow-y-auto w-full pb-2">
         {berserk && !finished && (
-          <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide mb-2 shrink-0">
+          <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide mb-1 shrink-0">
             Berserk · 4 guesses
           </p>
         )}
@@ -196,7 +196,7 @@ export function GamePage() {
           <div
             className={`grid shrink-0 transition-[grid-template-rows,opacity,margin-bottom] duration-300 ease-out ${
               canBerserk
-                ? "grid-rows-[1fr] opacity-100 mb-3"
+                ? "grid-rows-[1fr] opacity-100 mb-2"
                 : "grid-rows-[0fr] opacity-0 mb-0 pointer-events-none"
             }`}
           >
@@ -205,7 +205,7 @@ export function GamePage() {
                 type="button"
                 disabled={berserking || !canBerserk}
                 onClick={() => setBerserkDialogOpen(true)}
-                className="w-full px-4 py-1.5 text-sm font-bold uppercase tracking-wide rounded border border-amber-500/60 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
+                className="w-full px-3 py-1 text-sm font-bold uppercase tracking-wide rounded border border-amber-500/60 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
               >
                 Berserk
               </button>
