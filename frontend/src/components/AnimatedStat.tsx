@@ -22,7 +22,7 @@ export function AnimatedStat({
     if (prev.current === value) return;
     prev.current = value;
     setAnimClass(direction === "up" ? "animate-stat-up" : "animate-stat-down");
-    const t = window.setTimeout(() => setAnimClass(""), 350);
+    const t = window.setTimeout(() => setAnimClass(""), 500);
     return () => clearTimeout(t);
   }, [value, direction]);
 

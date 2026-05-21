@@ -8,6 +8,12 @@ import { Grid } from "../components/Grid";
 import { GuessesFooter } from "../components/GuessesFooter";
 import { Keyboard } from "../components/Keyboard";
 
+function winMessage(guessCount: number, points: number): string {
+  const label = guessCount === 1 ? "guess" : "guesses";
+  const pointLabel = points === 1 ? "point" : "points";
+  return `${guessCount} ${label} used, you won ${points} ${pointLabel}!`;
+}
+
 export function GamePage() {
   const [game, setGame] = useState<GameToday | null>(null);
   const [currentWord, setCurrentWord] = useState("");
@@ -30,6 +36,11 @@ export function GamePage() {
     setGame(data);
     setGuesses(data.guesses ?? []);
     setStatus(data.status);
+    if (data.status === "won" && data.guessCount != null) {
+      setMessage(winMessage(data.guessCount, data.points ?? 0));
+    } else if (data.status === "in_progress") {
+      setMessage("");
+    }
   }, []);
 
   const loadGame = useCallback(async () => {
@@ -123,10 +134,8 @@ export function GamePage() {
             setRevealingRow(null);
             setSubmitting(false);
             if (res.status === "won") {
-              const n = res.guessCount ?? 0;
-              const guessLabel = n === 1 ? "guess" : "guesses";
               setMessage(
-                `You won in ${n} ${guessLabel}, you won ${res.points ?? 0} points.`,
+                winMessage(res.guessCount ?? 0, res.points ?? 0),
               );
             } else if (res.status === "lost") {
               setMessage(res.answer ? `The word was ${res.answer}` : "Better luck tomorrow.");
@@ -225,13 +234,15 @@ export function GamePage() {
             </Link>
           </>
         )}
-        <GuessesFooter
-          used={guesses.length}
-          max={maxGuesses}
-          berserk={berserk}
-          status={status}
-          scoredPoints={game?.points}
-        />
+        {status !== "won" && (
+          <GuessesFooter
+            used={guesses.length}
+            max={maxGuesses}
+            berserk={berserk}
+            status={status}
+            scoredPoints={game?.points}
+          />
+        )}
       </div>
 
       {!finished && (

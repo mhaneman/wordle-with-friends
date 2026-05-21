@@ -62,31 +62,39 @@ body {
 }
 
 @keyframes stat-tick-up {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(0.4em);
+    transform: translateY(1.1em) scale(0.85);
   }
-  to {
+  55% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(-0.12em) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes stat-tick-down {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(-0.4em);
+    transform: translateY(-1.1em) scale(0.85);
   }
-  to {
+  55% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0.12em) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 .animate-stat-up {
-  animation: stat-tick-up 0.35s ease-out;
+  animation: stat-tick-up 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .animate-stat-down {
-  animation: stat-tick-down 0.35s ease-out;
+  animation: stat-tick-down 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
