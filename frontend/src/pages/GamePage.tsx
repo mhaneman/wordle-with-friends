@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import type { GameToday, GuessResponse, GuessRow, LetterState } from "../api/types";
 import { BerserkDialog } from "../components/BerserkDialog";
 import { Grid } from "../components/Grid";
+import { GuessesFooter } from "../components/GuessesFooter";
 import { Keyboard } from "../components/Keyboard";
 
 export function GamePage() {
@@ -67,6 +68,16 @@ export function GamePage() {
 
   const finished = status !== "in_progress";
   const canBerserk = !finished && !berserk && guesses.length === 0;
+  const [berserkSlot, setBerserkSlot] = useState(false);
+
+  useEffect(() => {
+    if (canBerserk) {
+      setBerserkSlot(true);
+      return;
+    }
+    const t = window.setTimeout(() => setBerserkSlot(false), 300);
+    return () => clearTimeout(t);
+  }, [canBerserk]);
 
   async function confirmBerserk() {
     if (!canBerserk || berserking) return;
@@ -167,30 +178,35 @@ export function GamePage() {
     />
     <div className="flex flex-col flex-1 min-h-0 w-full max-w-lg mx-auto">
       <div className="flex-1 flex flex-col items-center min-h-0 overflow-y-auto w-full pb-2">
-        <p className="text-neutral-500 text-xs mb-2 uppercase tracking-widest shrink-0">
-          {game?.puzzleDate} · Daily puzzle
-        </p>
         {berserk && !finished && (
           <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide mb-2 shrink-0">
             Berserk · 4 guesses
           </p>
         )}
-        {canBerserk && (
-          <button
-            type="button"
-            disabled={berserking}
-            onClick={() => setBerserkDialogOpen(true)}
-            className="mb-3 shrink-0 px-4 py-1.5 text-sm font-bold uppercase tracking-wide rounded border border-amber-500/60 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
+        {berserkSlot && (
+          <div
+            className={`grid shrink-0 transition-[grid-template-rows,opacity,margin-bottom] duration-300 ease-out ${
+              canBerserk
+                ? "grid-rows-[1fr] opacity-100 mb-3"
+                : "grid-rows-[0fr] opacity-0 mb-0 pointer-events-none"
+            }`}
           >
-            Berserk
-          </button>
+            <div className="overflow-hidden min-h-0">
+              <button
+                type="button"
+                disabled={berserking || !canBerserk}
+                onClick={() => setBerserkDialogOpen(true)}
+                className="w-full px-4 py-1.5 text-sm font-bold uppercase tracking-wide rounded border border-amber-500/60 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
+              >
+                Berserk
+              </button>
+            </div>
+          </div>
         )}
         <Grid
           guesses={guesses}
           currentWord={finished ? "" : currentWord}
           maxGuesses={maxGuesses}
-          berserk={berserk}
-          status={status}
           shake={shake}
           revealingRow={revealingRow}
         />
@@ -209,9 +225,13 @@ export function GamePage() {
             </Link>
           </>
         )}
-        <p className="mt-3 text-neutral-600 text-xs shrink-0 pb-1">
-          {guesses.length}/{maxGuesses} guesses used
-        </p>
+        <GuessesFooter
+          used={guesses.length}
+          max={maxGuesses}
+          berserk={berserk}
+          status={status}
+          scoredPoints={game?.points}
+        />
       </div>
 
       {!finished && (

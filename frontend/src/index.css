@@ -60,3 +60,33 @@ body {
 .tile-flip {
   animation: flip 0.5s ease forwards;
 }
+
+@keyframes stat-tick-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stat-tick-down {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-stat-up {
+  animation: stat-tick-up 0.35s ease-out;
+}
+
+.animate-stat-down {
+  animation: stat-tick-down 0.35s ease-out;
+}
