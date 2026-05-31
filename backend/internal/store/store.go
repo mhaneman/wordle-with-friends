@@ -60,6 +60,12 @@ type WeeklyLeaderboardEntry struct {
 	GamesPlayed int       `json:"gamesPlayed"`
 }
 
+type BestWeeklyPoints struct {
+	TotalPoints int
+	WeekStart   time.Time
+	WeekEnd     time.Time
+}
+
 const gamePointsSQL = `
 	CASE
 		WHEN gr.won AND gr.guess_count IS NOT NULL AND gr.berserk THEN
@@ -321,6 +327,34 @@ func (s *Store) GetWeeklyLeaderboard(ctx context.Context, weekStart, weekEnd tim
 		entries = append(entries, e)
 	}
 	return entries, rows.Err()
+}
+
+// GetBestWeeklyPoints returns the user's highest weekly point total (Mon–Sun Pacific weeks).
+func (s *Store) GetBestWeeklyPoints(ctx context.Context, userID uuid.UUID) (*BestWeeklyPoints, error) {
+	var b BestWeeklyPoints
+	err := s.pool.QueryRow(ctx, `
+		WITH weekly AS (
+			SELECT
+				date_trunc('week', gr.puzzle_date::timestamp)::date AS week_start,
+				SUM(`+gamePointsSQL+`)::int AS total_points
+			FROM game_results gr
+			WHERE gr.user_id = $1
+			  AND gr.in_progress = FALSE
+			  AND gr.completed_at IS NOT NULL
+			GROUP BY date_trunc('week', gr.puzzle_date::timestamp)
+		)
+		SELECT week_start, (week_start + interval '6 days')::date, total_points
+		FROM weekly
+		ORDER BY total_points DESC, week_start DESC
+		LIMIT 1
+	`, userID).Scan(&b.WeekStart, &b.WeekEnd, &b.TotalPoints)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &b, nil
 }
 
 func isUniqueViolation(err error) bool {

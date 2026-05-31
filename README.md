@@ -55,6 +55,7 @@ docker-compose.yml
 make up          # build and start all services
 make down        # stop containers
 make logs        # follow logs
+docker compose restart api   # after Go API code changes (dev container does not hot-reload)
 docker compose exec api goose -dir migrations postgres "$DATABASE_URL" up
 ```
 

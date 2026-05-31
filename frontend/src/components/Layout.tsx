@@ -26,9 +26,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-3 text-sm">
           {user ? (
             <>
-              <span className="text-neutral-400 hidden sm:inline">
+              <Link
+                to="/profile"
+                className="text-neutral-400 hover:text-white font-medium"
+              >
                 {user.username}
-              </span>
+              </Link>
               <button
                 type="button"
                 onClick={() => void logout()}

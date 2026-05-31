@@ -21,6 +21,7 @@ import (
 	"github.com/spaceclone/wordle-with-friends/backend/internal/game"
 	"github.com/spaceclone/wordle-with-friends/backend/internal/leaderboard"
 	appmw "github.com/spaceclone/wordle-with-friends/backend/internal/middleware"
+	"github.com/spaceclone/wordle-with-friends/backend/internal/profile"
 	"github.com/spaceclone/wordle-with-friends/backend/internal/store"
 )
 
@@ -58,6 +59,7 @@ func main() {
 	}
 	gameHandler := game.NewHandler(st, dict)
 	lbHandler := leaderboard.NewHandler(st)
+	profileHandler := profile.NewHandler(st)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -103,6 +105,11 @@ func main() {
 			lr.Use(appmw.RequireAuth(tokens, st))
 			lr.Get("/today", lbHandler.Today)
 			lr.Get("/week", lbHandler.Week)
+		})
+
+		api.Route("/profile", func(pr chi.Router) {
+			pr.Use(appmw.RequireAuth(tokens, st))
+			pr.Get("/me", profileHandler.Me)
 		})
 
 		api.Route("/admin", func(ar chi.Router) {

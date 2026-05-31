@@ -57,3 +57,14 @@ export interface LeaderboardWeek {
   entries: WeeklyLeaderboardEntry[];
   myRank?: number;
 }
+
+export interface ProfileBestWeek {
+  totalPoints: number;
+  weekStart: string;
+  weekEnd: string;
+}
+
+export interface UserProfile {
+  username: string;
+  bestWeek?: ProfileBestWeek;
+}

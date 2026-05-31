@@ -6,6 +6,7 @@ import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 import { AdminLoginPage } from "./pages/AdminLoginPage";
 import { GamePage } from "./pages/GamePage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 
@@ -41,6 +42,14 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <LeaderboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
                   </ProtectedRoute>
                 }
               />
