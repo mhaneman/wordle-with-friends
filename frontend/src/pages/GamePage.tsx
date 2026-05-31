@@ -246,7 +246,7 @@ export function GamePage() {
       </div>
 
       {!finished && (
-        <div className="shrink-0 w-full mt-auto sticky bottom-0 z-10 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div className="shrink-0 w-[calc(100%+1rem)] -mx-2 md:mx-0 md:w-full mt-auto sticky bottom-0 z-10 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           <Keyboard
             keyStates={keyStates}
             onKey={(k) => void handleKey(k)}
