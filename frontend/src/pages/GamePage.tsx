@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDelayedLoading } from "../hooks/useDelayedLoading";
+import { usePlayAreaFit } from "../hooks/usePlayAreaFit";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { GameToday, GuessResponse, GuessRow, LetterState } from "../api/types";
@@ -89,6 +90,26 @@ export function GamePage() {
     const t = window.setTimeout(() => setBerserkSlot(false), 300);
     return () => clearTimeout(t);
   }, [canBerserk]);
+
+  const playAreaRef = useRef<HTMLDivElement>(null);
+  const gameRef = useRef<HTMLDivElement>(null);
+  const keyboardRef = useRef<HTMLDivElement>(null);
+  const gameScale = usePlayAreaFit(
+    playAreaRef,
+    gameRef,
+    keyboardRef,
+    !finished,
+    [
+      finished,
+      guesses.length,
+      maxGuesses,
+      message,
+      berserkSlot,
+      canBerserk,
+      berserk,
+      showLoading,
+    ],
+  );
 
   async function confirmBerserk() {
     if (!canBerserk || berserking) return;
@@ -185,68 +206,81 @@ export function GamePage() {
       onClose={() => setBerserkDialogOpen(false)}
       onConfirm={() => void confirmBerserk()}
     />
-    <div className="flex flex-col flex-1 min-h-0 w-full max-w-lg mx-auto">
-      <div className="flex-1 flex flex-col items-center min-h-0 overflow-y-auto w-full pb-2">
-        {berserk && !finished && (
-          <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide mb-1 shrink-0">
-            Berserk · 4 guesses
-          </p>
-        )}
-        {berserkSlot && (
-          <div
-            className={`grid shrink-0 transition-[grid-template-rows,opacity,margin-bottom] duration-300 ease-out ${
-              canBerserk
-                ? "grid-rows-[1fr] opacity-100 mb-2"
-                : "grid-rows-[0fr] opacity-0 mb-0 pointer-events-none"
-            }`}
-          >
-            <div className="overflow-hidden min-h-0">
-              <button
-                type="button"
-                disabled={berserking || !canBerserk}
-                onClick={() => setBerserkDialogOpen(true)}
-                className="w-full px-3 py-1 text-sm font-bold uppercase tracking-wide rounded border border-amber-500/60 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
-              >
-                Berserk
-              </button>
+    <div
+      ref={playAreaRef}
+      className="flex flex-col flex-1 min-h-0 basis-0 w-full h-full"
+    >
+      <div className="flex-1 min-h-0 basis-0 flex items-center justify-center overflow-hidden w-full">
+        <div
+          ref={gameRef}
+          className="flex flex-col items-center w-fit max-w-full will-change-transform"
+          style={{
+            transform: `scale(${gameScale})`,
+            transformOrigin: "center center",
+          }}
+        >
+          {berserk && !finished && (
+            <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide mb-1 shrink-0">
+              Berserk · 4 guesses
+            </p>
+          )}
+          {berserkSlot && (
+            <div
+              className={`grid shrink-0 w-full transition-[grid-template-rows,opacity,margin-bottom] duration-300 ease-out ${
+                canBerserk
+                  ? "grid-rows-[1fr] opacity-100 mb-2"
+                  : "grid-rows-[0fr] opacity-0 mb-0 pointer-events-none"
+              }`}
+            >
+              <div className="overflow-hidden min-h-0">
+                <button
+                  type="button"
+                  disabled={berserking || !canBerserk}
+                  onClick={() => setBerserkDialogOpen(true)}
+                  className="w-full px-3 py-1 text-sm font-bold uppercase tracking-wide rounded border border-amber-500/60 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
+                >
+                  Berserk
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-        <Grid
-          guesses={guesses}
-          currentWord={finished ? "" : currentWord}
-          maxGuesses={maxGuesses}
-          shake={shake}
-          revealingRow={revealingRow}
-        />
-        {message && (
-          <p className="mt-3 text-sm font-semibold text-center min-h-[1.25rem] shrink-0 px-2">
-            {message}
-          </p>
-        )}
-        {finished && (
-          <>
+          )}
+          <Grid
+            guesses={guesses}
+            currentWord={finished ? "" : currentWord}
+            maxGuesses={maxGuesses}
+            shake={shake}
+            revealingRow={revealingRow}
+          />
+          {message && (
+            <p className="mt-3 text-sm font-semibold text-center min-h-[1.25rem] shrink-0 px-2">
+              {message}
+            </p>
+          )}
+          {finished && (
             <Link
               to="/leaderboard"
               className="mt-2 text-sm text-correct hover:underline shrink-0"
             >
               View today&apos;s leaderboard →
             </Link>
-          </>
-        )}
-        {status !== "won" && (
-          <GuessesFooter
-            used={guesses.length}
-            max={maxGuesses}
-            berserk={berserk}
-            status={status}
-            scoredPoints={game?.points}
-          />
-        )}
+          )}
+          {status !== "won" && (
+            <GuessesFooter
+              used={guesses.length}
+              max={maxGuesses}
+              berserk={berserk}
+              status={status}
+              scoredPoints={game?.points}
+            />
+          )}
+        </div>
       </div>
 
       {!finished && (
-        <div className="shrink-0 w-[calc(100%+1rem)] -mx-2 md:mx-0 md:w-full mt-auto sticky bottom-0 z-10 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div
+          ref={keyboardRef}
+          className="shrink-0 w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full border-t border-neutral-800 bg-neutral-950 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        >
           <Keyboard
             keyStates={keyStates}
             onKey={(k) => void handleKey(k)}

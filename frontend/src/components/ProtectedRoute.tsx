@@ -16,5 +16,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  return children;
+  return (
+    <div className="flex flex-1 flex-col min-h-0 basis-0 w-full h-full">
+      {children}
+    </div>
+  );
 }

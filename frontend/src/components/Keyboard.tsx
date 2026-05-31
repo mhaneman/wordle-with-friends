@@ -20,7 +20,24 @@ const rowClass = "flex w-full gap-1 sm:gap-1.5";
 const homeRowClass =
   `${rowClass} px-[calc((100%-2.25rem)/20)] sm:px-[calc((100%-3.375rem)/20)]`;
 const keyClass =
-  "rounded font-bold uppercase text-white flex items-center justify-center select-none transition-colors duration-75 min-w-0 h-14 sm:h-16 md:h-[4.25rem] text-[clamp(0.75rem,3.25vw,1rem)]";
+  "rounded font-bold uppercase text-white flex items-center justify-center select-none transition-colors duration-75 min-w-0 overflow-hidden px-0.5 h-14 sm:h-16 md:h-[4.25rem] text-[clamp(0.875rem,4vw,1.125rem)]";
+
+function keyLabel(k: string) {
+  if (k === "enter") {
+    return (
+      <>
+        <span className="sm:hidden text-[1.35em] leading-none" aria-hidden>
+          ↵
+        </span>
+        <span className="hidden sm:inline text-[clamp(0.7rem,3vw,0.9375rem)]">
+          Enter
+        </span>
+      </>
+    );
+  }
+  if (k === "back") return "⌫";
+  return k;
+}
 
 export function Keyboard({ keyStates, onKey, inactive }: KeyboardProps) {
   const renderKey = (k: string, wide = false) => {
@@ -29,14 +46,16 @@ export function Keyboard({ keyStates, onKey, inactive }: KeyboardProps) {
     const pressed = state
       ? "active:brightness-[0.72]"
       : "active:bg-neutral-600";
+    const wideFlex = k === "enter" ? "flex-[2]" : "flex-[1.5]";
     return (
       <button
         key={k}
         type="button"
         onClick={() => onKey(k)}
-        className={`${keyClass} ${color} ${pressed} ${wide ? "flex-[1.5]" : "flex-1"}`}
+        aria-label={k === "enter" ? "Enter" : k === "back" ? "Backspace" : k}
+        className={`${keyClass} ${color} ${pressed} ${wide ? wideFlex : "flex-1"}`}
       >
-        {k === "enter" ? "Enter" : k === "back" ? "⌫" : k}
+        {keyLabel(k)}
       </button>
     );
   };
