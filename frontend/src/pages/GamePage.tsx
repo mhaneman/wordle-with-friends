@@ -92,24 +92,18 @@ export function GamePage() {
   }, [canBerserk]);
 
   const playAreaRef = useRef<HTMLDivElement>(null);
+  const gameAreaRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<HTMLDivElement>(null);
-  const keyboardRef = useRef<HTMLDivElement>(null);
-  const gameScale = usePlayAreaFit(
-    playAreaRef,
-    gameRef,
-    keyboardRef,
-    !finished,
-    [
-      finished,
-      guesses.length,
-      maxGuesses,
-      message,
-      berserkSlot,
-      canBerserk,
-      berserk,
-      showLoading,
-    ],
-  );
+  const gameScale = usePlayAreaFit(gameAreaRef, gameRef, [
+    finished,
+    guesses.length,
+    maxGuesses,
+    message,
+    berserkSlot,
+    canBerserk,
+    berserk,
+    showLoading,
+  ]);
 
   async function confirmBerserk() {
     if (!canBerserk || berserking) return;
@@ -210,10 +204,13 @@ export function GamePage() {
       ref={playAreaRef}
       className="flex flex-col flex-1 min-h-0 basis-0 w-full h-full"
     >
-      <div className="flex-1 min-h-0 basis-0 flex items-center justify-center overflow-hidden w-full">
+      <div
+        ref={gameAreaRef}
+        className="flex-1 min-h-0 basis-0 flex items-center justify-center overflow-hidden w-full px-2"
+      >
         <div
           ref={gameRef}
-          className="flex flex-col items-center w-fit max-w-full will-change-transform"
+          className="flex w-full max-w-[19.375rem] flex-col items-center will-change-transform"
           style={{
             transform: `scale(${gameScale})`,
             transformOrigin: "center center",
@@ -277,10 +274,7 @@ export function GamePage() {
       </div>
 
       {!finished && (
-        <div
-          ref={keyboardRef}
-          className="shrink-0 w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full border-t border-neutral-800 bg-neutral-950 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
-        >
+        <div className="shrink-0 w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full border-t border-neutral-800 bg-neutral-950 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           <Keyboard
             keyStates={keyStates}
             onKey={(k) => void handleKey(k)}

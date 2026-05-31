@@ -23,7 +23,7 @@ export function Tile({ letter = "", state, filled, reveal, delay = 0 }: TileProp
 
   return (
     <div
-      className={`w-[62px] h-[62px] border-2 flex items-center justify-center text-2xl font-bold uppercase ${cls} ${reveal ? "tile-flip" : ""}`}
+      className={`flex-1 min-w-0 aspect-square max-w-[3.875rem] max-h-[3.875rem] border-2 flex items-center justify-center text-[clamp(1.125rem,6vw,1.5rem)] font-bold uppercase ${cls} ${reveal ? "tile-flip" : ""}`}
       style={reveal ? { animationDelay: `${delay}ms` } : undefined}
     >
       {letter}

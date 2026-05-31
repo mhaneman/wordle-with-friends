@@ -39,9 +39,11 @@ export function Grid({
   }
 
   return (
-    <div className={`flex flex-col gap-1.5 ${shake ? "animate-shake" : ""}`}>
+    <div
+      className={`flex w-full max-w-[19.375rem] flex-col gap-1.5 ${shake ? "animate-shake" : ""}`}
+    >
       {rows.map((row, rowIdx) => (
-        <div key={rowIdx} className="flex gap-1.5">
+        <div key={rowIdx} className="flex w-full gap-1.5">
           {row.letters.map((letter, colIdx) => (
             <Tile
               key={colIdx}

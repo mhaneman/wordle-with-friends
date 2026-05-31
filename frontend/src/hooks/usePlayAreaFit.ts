@@ -2,50 +2,43 @@ import { type RefObject, useLayoutEffect, useState } from "react";
 
 const MIN_GAME_SCALE = 0.5;
 
-function availableHeight(container: HTMLElement): number {
-  const rect = container.getBoundingClientRect();
-  let h = rect.height;
+/** Use visual viewport only when it is clearly shrunk (e.g. mobile keyboard open). */
+function availableHeight(el: HTMLElement): number {
+  const h = el.clientHeight;
   const vv = window.visualViewport;
-  if (vv && h > 0) {
-    const viewportBottom = vv.offsetTop + vv.height;
-    h = Math.min(h, Math.max(0, viewportBottom - rect.top));
-  }
-  return h;
+  if (!vv || h <= 0) return h;
+  const keyboardLikelyOpen = vv.height < window.innerHeight * 0.92;
+  if (!keyboardLikelyOpen) return h;
+  const viewportBottom = vv.offsetTop + vv.height;
+  const rect = el.getBoundingClientRect();
+  return Math.min(h, Math.max(0, viewportBottom - rect.top));
 }
 
 /**
- * Scales the game block to fit above a fixed-height keyboard in the play area.
+ * Scales the game block to fit in the area above the keyboard.
  */
 export function usePlayAreaFit(
-  containerRef: RefObject<HTMLDivElement | null>,
+  gameAreaRef: RefObject<HTMLDivElement | null>,
   gameRef: RefObject<HTMLDivElement | null>,
-  keyboardRef: RefObject<HTMLDivElement | null>,
-  hasKeyboard: boolean,
   deps: unknown[] = [],
 ) {
   const [gameScale, setGameScale] = useState(1);
 
   useLayoutEffect(() => {
-    const container = containerRef.current;
+    const area = gameAreaRef.current;
     const game = gameRef.current;
-    if (!container || !game) return;
+    if (!area || !game) return;
 
     const update = () => {
-      const total = availableHeight(container);
-      const keyboardH = hasKeyboard
-        ? (keyboardRef.current?.offsetHeight ?? 0)
-        : 0;
-      const gameNeeded = game.scrollHeight;
-      const gameAvailable = total - keyboardH;
-
-      if (gameNeeded <= 0 || gameAvailable <= 0) {
+      const available = availableHeight(area);
+      const needed = game.offsetHeight;
+      if (needed <= 0 || available <= 0) {
         setGameScale(1);
         return;
       }
-
       setGameScale(
-        gameNeeded > gameAvailable
-          ? Math.min(1, Math.max(MIN_GAME_SCALE, gameAvailable / gameNeeded))
+        needed > available + 1
+          ? Math.min(1, Math.max(MIN_GAME_SCALE, available / needed))
           : 1,
       );
     };
@@ -54,9 +47,8 @@ export function usePlayAreaFit(
     const raf = requestAnimationFrame(update);
 
     const ro = new ResizeObserver(update);
-    ro.observe(container);
+    ro.observe(area);
     ro.observe(game);
-    if (keyboardRef.current) ro.observe(keyboardRef.current);
 
     const vv = window.visualViewport;
     vv?.addEventListener("resize", update);
@@ -71,7 +63,7 @@ export function usePlayAreaFit(
       window.removeEventListener("resize", update);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- caller controls remeasure
-  }, [hasKeyboard, ...deps]);
+  }, deps);
 
   return gameScale;
 }
