@@ -30,3 +30,7 @@ out/
 .cache/
 tmp/
 *.tmp
+
+# pnpm directories
+.pnpm-store/
+.pnpm-debug.log
