@@ -58,7 +58,7 @@ export function LeaderboardPage() {
         : "";
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-md py-4 pb-8">
       <h1 className="text-xl font-bold text-center mb-4">Leaderboard</h1>
 
       <div className="flex justify-center gap-2 mb-4">

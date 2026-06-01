@@ -1,16 +1,19 @@
 import type { LetterState } from "../api/types";
 
-const stateClasses: Record<LetterState | "empty" | "filled", string> = {
+const stateClasses: Record<LetterState | "empty" | "filled" | "answer", string> = {
   empty: "border-neutral-600 text-white",
   filled: "border-neutral-500 text-white",
   correct: "bg-correct border-correct text-white",
   present: "bg-present border-present text-white",
   absent: "bg-absent border-absent text-white",
+  answer: "bg-answer border-answer text-white",
 };
+
+type TileState = LetterState | "answer";
 
 interface TileProps {
   letter?: string;
-  state?: LetterState;
+  state?: TileState;
   filled?: boolean;
   reveal?: boolean;
   delay?: number;
@@ -23,7 +26,7 @@ export function Tile({ letter = "", state, filled, reveal, delay = 0 }: TileProp
 
   return (
     <div
-      className={`w-[62px] h-[62px] border-2 flex items-center justify-center text-2xl font-bold uppercase ${cls} ${reveal ? "tile-flip" : ""}`}
+      className={`game-tile shrink-0 border-2 flex items-center justify-center font-bold uppercase ${cls} ${reveal ? "tile-flip" : ""}`}
       style={reveal ? { animationDelay: `${delay}ms` } : undefined}
     >
       {letter}

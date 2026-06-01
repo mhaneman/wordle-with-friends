@@ -4,6 +4,7 @@
   --color-correct: #538d4e;
   --color-present: #b59f3b;
   --color-absent: #3a3a3c;
+  --color-answer: #dc2626;
   --color-key: #818384;
 }
 
@@ -20,6 +21,61 @@ body {
 
 body {
   font-family: system-ui, -apple-system, sans-serif;
+}
+
+.game-board,
+.game-grid {
+  width: 100%;
+}
+
+.game-grid {
+  --grid-rows: 6;
+  --grid-footer-height: 0px;
+  --grid-padding-top: 0.25rem;
+  --row-gap: 0.375rem;
+  --col-gap: 0.375rem;
+  container-type: size;
+  padding-top: var(--grid-padding-top);
+}
+
+.game-grid-rows {
+  gap: var(--row-gap);
+}
+
+.game-grid-row {
+  gap: var(--col-gap);
+  justify-content: center;
+  align-items: center;
+}
+
+/* Tile side from grid box; row gap stays fixed (rows do not flex-grow). */
+.game-tile {
+  --tile-size: min(
+    calc((100cqw - 4 * var(--col-gap)) / 5),
+    calc(
+      (
+        100cqh - var(--grid-footer-height) - var(--grid-padding-top) -
+          (var(--grid-rows) - 1) * var(--row-gap)
+      ) / var(--grid-rows)
+    )
+  );
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: var(--tile-size);
+  height: var(--tile-size);
+  font-size: clamp(1.125rem, 4.5vmin, 1.5rem);
+}
+
+/* Tighter gaps on short viewports (e.g. 540×720). */
+@media (max-height: 780px) {
+  .game-grid {
+    --row-gap: 0.25rem;
+    --col-gap: 0.25rem;
+  }
+
+  .game-tile {
+    font-size: clamp(1rem, 3.5vmin, 1.25rem);
+  }
 }
 
 @keyframes shake {
