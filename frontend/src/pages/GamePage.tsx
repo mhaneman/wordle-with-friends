@@ -140,7 +140,10 @@ export function GamePage() {
             }
           }, 600);
         } catch (err) {
-          setMessage(err instanceof Error ? err.message : "Invalid guess");
+          const msg = err instanceof Error ? err.message : "Invalid guess";
+          if (msg !== "not in word list") {
+            setMessage(msg);
+          }
           setShake(true);
           setTimeout(() => setShake(false), 400);
           setSubmitting(false);
@@ -193,12 +196,7 @@ export function GamePage() {
             }}
           />
         ) : (
-          <div className="game-board flex flex-1 flex-col items-center w-full min-h-0 mx-auto">
-            {berserk && !finished && (
-              <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide mb-1 shrink-0">
-                Berserk · 4 guesses
-              </p>
-            )}
+          <div className="game-board flex flex-1 flex-col items-center justify-start w-full min-h-0 mx-auto">
             <Grid
               guesses={guesses}
               currentWord={finished ? "" : currentWord}
@@ -206,29 +204,30 @@ export function GamePage() {
               shake={shake}
               revealingRow={revealingRow}
               answer={status === "lost" ? answer : undefined}
-            />
-            {message && (
-              <p className="mt-3 text-sm font-semibold text-center min-h-[1.25rem] shrink-0 px-2">
-                {message}
-              </p>
-            )}
-            {finished && (
-              <Link
-                to="/leaderboard"
-                className="mt-2 text-sm text-correct hover:underline shrink-0"
-              >
-                View today&apos;s leaderboard →
-              </Link>
-            )}
-            {status !== "won" && (
-              <GuessesFooter
-                used={guesses.length}
-                max={maxGuesses}
-                berserk={berserk}
-                status={status}
-                scoredPoints={game?.points}
-              />
-            )}
+            >
+              {message && (
+                <p className="mt-3 text-sm font-semibold text-center min-h-[1.25rem] shrink-0 px-2">
+                  {message}
+                </p>
+              )}
+              {status !== "won" && (
+                <GuessesFooter
+                  used={guesses.length}
+                  max={maxGuesses}
+                  berserk={berserk}
+                  status={status}
+                  scoredPoints={game?.points}
+                />
+              )}
+              {finished && (
+                <Link
+                  to="/leaderboard"
+                  className="mt-2 text-sm text-correct hover:underline shrink-0"
+                >
+                  View today&apos;s leaderboard →
+                </Link>
+              )}
+            </Grid>
           </div>
         )}
       </div>

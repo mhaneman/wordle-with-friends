@@ -30,9 +30,15 @@ body {
 
 .game-grid {
   --grid-rows: 6;
+  --grid-footer-height: 0px;
+  --grid-padding-top: 0.25rem;
   --row-gap: 0.375rem;
   --col-gap: 0.375rem;
   container-type: size;
+  padding-top: var(--grid-padding-top);
+}
+
+.game-grid-rows {
   gap: var(--row-gap);
 }
 
@@ -46,24 +52,18 @@ body {
 .game-tile {
   --tile-size: min(
     calc((100cqw - 4 * var(--col-gap)) / 5),
-    calc((100cqh - (var(--grid-rows) - 1) * var(--row-gap)) / var(--grid-rows))
+    calc(
+      (
+        100cqh - var(--grid-footer-height) - var(--grid-padding-top) -
+          (var(--grid-rows) - 1) * var(--row-gap)
+      ) / var(--grid-rows)
+    )
   );
   box-sizing: border-box;
   flex: 0 0 auto;
   width: var(--tile-size);
   height: var(--tile-size);
   font-size: clamp(1.125rem, 4.5vmin, 1.5rem);
-}
-
-/* Tall viewports: board spans the column like the keyboard. */
-@media (min-height: 820px) {
-  .game-tile {
-    --tile-size: min(
-      calc((100cqw - 4 * var(--col-gap)) / 5),
-      calc((100cqh - (var(--grid-rows) - 1) * var(--row-gap)) / var(--grid-rows)),
-      4.25rem
-    );
-  }
 }
 
 /* Tighter gaps on short viewports (e.g. 540×720). */
