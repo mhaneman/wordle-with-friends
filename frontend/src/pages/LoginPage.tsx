@@ -31,7 +31,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-sm py-6">
+    <div className="flex flex-col items-center w-full py-6">
+      <div className="w-full max-w-sm">
       <h1 className="text-2xl font-bold text-center mb-6 tracking-wide">
         The Secret Word
       </h1>
@@ -69,6 +70,7 @@ export function LoginPage() {
           Register
         </Link>
       </p>
+      </div>
     </div>
   );
 }
