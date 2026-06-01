@@ -29,12 +29,15 @@ body {
 }
 
 .game-grid {
+  --grid-max-width: 420px;
   --grid-rows: 6;
   --grid-footer-height: 0px;
   --grid-padding-top: 0.25rem;
   --row-gap: 0.375rem;
   --col-gap: 0.375rem;
   container-type: size;
+  max-width: var(--grid-max-width);
+  margin-inline: auto;
   padding-top: var(--grid-padding-top);
 }
 
@@ -52,6 +55,7 @@ body {
 .game-tile {
   --tile-size: min(
     calc((100cqw - 4 * var(--col-gap)) / 5),
+    calc((var(--grid-max-width) - 4 * var(--col-gap)) / 5),
     calc(
       (
         100cqh - var(--grid-footer-height) - var(--grid-padding-top) -
