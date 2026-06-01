@@ -40,10 +40,10 @@ export function Grid({
 
   return (
     <div
-      className={`flex w-full max-w-[19.375rem] flex-col gap-1.5 ${shake ? "animate-shake" : ""}`}
+      className={`game-grid flex flex-1 min-h-0 w-full flex-col justify-center ${shake ? "animate-shake" : ""}`}
     >
       {rows.map((row, rowIdx) => (
-        <div key={rowIdx} className="flex w-full gap-1.5">
+        <div key={rowIdx} className="game-grid-row flex shrink-0 w-full">
           {row.letters.map((letter, colIdx) => (
             <Tile
               key={colIdx}

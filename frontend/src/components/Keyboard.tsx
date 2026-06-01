@@ -62,7 +62,7 @@ export function Keyboard({ keyStates, onKey, inactive }: KeyboardProps) {
 
   return (
     <div
-      className={`flex flex-col gap-1.5 sm:gap-2 w-full max-w-none md:max-w-lg mx-auto px-1.5 sm:px-2 md:px-0${inactive ? " pointer-events-none" : ""}`}
+      className={`flex flex-col gap-1.5 sm:gap-2 w-full mx-auto px-1.5 sm:px-2 md:px-0${inactive ? " pointer-events-none" : ""}`}
     >
       <div className={rowClass}>
         {ROWS[0].split("").map((k) => renderKey(k))}
