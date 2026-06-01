@@ -7,6 +7,7 @@ interface GridProps {
   maxGuesses: number;
   shake?: boolean;
   revealingRow?: number | null;
+  answer?: string;
 }
 
 export function Grid({
@@ -15,11 +16,13 @@ export function Grid({
   maxGuesses,
   shake,
   revealingRow,
+  answer,
 }: GridProps) {
   const rows: Array<{
     letters: string[];
     states?: LetterState[];
     isCurrent: boolean;
+    isAnswer?: boolean;
   }> = [];
 
   for (let i = 0; i < maxGuesses; i++) {
@@ -38,9 +41,20 @@ export function Grid({
     }
   }
 
+  if (answer) {
+    rows.push({
+      letters: answer.split(""),
+      isCurrent: false,
+      isAnswer: true,
+    });
+  }
+
+  const rowCount = rows.length;
+
   return (
     <div
       className={`game-grid flex flex-1 min-h-0 w-full flex-col justify-center ${shake ? "animate-shake" : ""}`}
+      style={{ "--grid-rows": rowCount } as React.CSSProperties}
     >
       {rows.map((row, rowIdx) => (
         <div key={rowIdx} className="game-grid-row flex shrink-0 w-full">
@@ -48,7 +62,7 @@ export function Grid({
             <Tile
               key={colIdx}
               letter={letter}
-              state={row.states?.[colIdx]}
+              state={row.isAnswer ? "answer" : row.states?.[colIdx]}
               filled={row.isCurrent && !!letter}
               reveal={revealingRow === rowIdx}
               delay={colIdx * 100}

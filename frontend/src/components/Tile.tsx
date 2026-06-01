@@ -1,16 +1,19 @@
 import type { LetterState } from "../api/types";
 
-const stateClasses: Record<LetterState | "empty" | "filled", string> = {
+const stateClasses: Record<LetterState | "empty" | "filled" | "answer", string> = {
   empty: "border-neutral-600 text-white",
   filled: "border-neutral-500 text-white",
   correct: "bg-correct border-correct text-white",
   present: "bg-present border-present text-white",
   absent: "bg-absent border-absent text-white",
+  answer: "bg-answer border-answer text-white",
 };
+
+type TileState = LetterState | "answer";
 
 interface TileProps {
   letter?: string;
-  state?: LetterState;
+  state?: TileState;
   filled?: boolean;
   reveal?: boolean;
   delay?: number;

@@ -28,6 +28,7 @@ export function GamePage() {
   const [submitting, setSubmitting] = useState(false);
   const [berserking, setBerserking] = useState(false);
   const [regularStarted, setRegularStarted] = useState(false);
+  const [answer, setAnswer] = useState<string | undefined>();
 
   const maxGuesses = game?.maxGuesses ?? 6;
   const berserk = game?.berserk ?? false;
@@ -36,9 +37,14 @@ export function GamePage() {
     setGame(data);
     setGuesses(data.guesses ?? []);
     setStatus(data.status);
+    if (data.status === "lost" && data.answer) {
+      setAnswer(data.answer);
+    } else if (data.status !== "lost") {
+      setAnswer(undefined);
+    }
     if (data.status === "won" && data.guessCount != null) {
       setMessage(winMessage(data.guessCount, data.points ?? 0));
-    } else if (data.status === "in_progress") {
+    } else if (data.status === "in_progress" || data.status === "lost") {
       setMessage("");
     }
   }, []);
@@ -131,8 +137,6 @@ export function GamePage() {
               setMessage(
                 winMessage(res.guessCount ?? 0, res.points ?? 0),
               );
-            } else if (res.status === "lost") {
-              setMessage(res.answer ? `The word was ${res.answer}` : "Better luck tomorrow.");
             }
           }, 600);
         } catch (err) {
@@ -201,6 +205,7 @@ export function GamePage() {
               maxGuesses={maxGuesses}
               shake={shake}
               revealingRow={revealingRow}
+              answer={status === "lost" ? answer : undefined}
             />
             {message && (
               <p className="mt-3 text-sm font-semibold text-center min-h-[1.25rem] shrink-0 px-2">

@@ -36,7 +36,13 @@ func (h *Handler) Today(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "game error")
 		return
 	}
-	writeJSON(w, http.StatusOK, gameStateResponse(date, gr))
+	resp := gameStateResponse(date, gr)
+	if gameStatus(gr) == "lost" {
+		if answer, err := h.store.GetDailyPuzzleWord(r.Context(), date); err == nil {
+			resp["answer"] = answer
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) Berserk(w http.ResponseWriter, r *http.Request) {

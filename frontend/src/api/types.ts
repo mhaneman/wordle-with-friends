@@ -18,6 +18,7 @@ export interface GameToday {
   status: "in_progress" | "won" | "lost";
   guessCount?: number;
   points?: number;
+  answer?: string;
 }
 
 export interface GuessResponse extends GameToday {
