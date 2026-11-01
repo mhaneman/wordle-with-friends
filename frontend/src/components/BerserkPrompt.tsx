@@ -1,11 +1,11 @@
 type BerserkPromptProps = {
-  confirming: boolean;
+  pending: "yes" | "no" | null;
   onYes: () => void;
   onNo: () => void;
 };
 
 export function BerserkPrompt({
-  confirming,
+  pending,
   onYes,
   onNo,
 }: BerserkPromptProps) {
@@ -18,19 +18,19 @@ export function BerserkPrompt({
       <div className="mt-5 flex w-full gap-3">
         <button
           type="button"
-          disabled={confirming}
+          disabled={pending !== null}
           onClick={onNo}
           className="flex-1 py-2.5 rounded font-semibold text-sm text-ink-muted border border-line-emphasis hover:bg-surface-raised disabled:opacity-50"
         >
-          No
+          {pending === "no" ? "…" : "No"}
         </button>
         <button
           type="button"
-          disabled={confirming}
+          disabled={pending !== null}
           onClick={onYes}
           className="flex-1 py-2.5 rounded font-semibold text-sm uppercase tracking-wide bg-warning-strong text-canvas hover:bg-warning disabled:opacity-50"
         >
-          {confirming ? "…" : "Yes"}
+          {pending === "yes" ? "…" : "Yes"}
         </button>
       </div>
     </div>

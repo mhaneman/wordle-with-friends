@@ -96,7 +96,9 @@ func main() {
 			gr.Use(appmw.RateLimit(120, time.Minute, cfg.TrustProxy))
 			gr.Get("/today", gameHandler.Today)
 			gr.Post("/berserk", gameHandler.Berserk)
+			gr.Post("/regular", gameHandler.Regular)
 			gr.Post("/guess", gameHandler.Guess)
+			gr.Post("/peek", gameHandler.Peek)
 		})
 
 		api.Route("/leaderboard", func(lr chi.Router) {

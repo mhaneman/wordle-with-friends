@@ -2,6 +2,7 @@ package leaderboard
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -19,6 +20,9 @@ func NewHandler(st *store.Store) *Handler {
 }
 
 func (h *Handler) Today(w http.ResponseWriter, r *http.Request) {
+	if !h.allowView(w, r) {
+		return
+	}
 	date := game.TodayPuzzleDate()
 	entries, err := h.store.GetLeaderboard(r.Context(), date, 50)
 	if err != nil {
@@ -44,6 +48,9 @@ func (h *Handler) Today(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Week(w http.ResponseWriter, r *http.Request) {
+	if !h.allowView(w, r) {
+		return
+	}
 	weekStart, weekEnd := game.WeekRange(time.Now())
 	entries, err := h.store.GetWeeklyLeaderboard(r.Context(), weekStart, weekEnd, 50)
 	if err != nil {
@@ -67,6 +74,24 @@ func (h *Handler) Week(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) allowView(w http.ResponseWriter, r *http.Request) bool {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return false
+	}
+	gr, err := h.store.GetGame(r.Context(), user.ID, game.TodayPuzzleDate())
+	if errors.Is(err, store.ErrNotFound) || (err == nil && gr.InProgress && !gr.Peeked) {
+		writeError(w, http.StatusForbidden, "finish today's puzzle or peek first")
+		return false
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "leaderboard error")
+		return false
+	}
+	return true
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {

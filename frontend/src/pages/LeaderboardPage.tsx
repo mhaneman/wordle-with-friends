@@ -6,6 +6,7 @@ import type {
 } from "../api/types";
 import { useAuth } from "../hooks/useAuth";
 import { useDelayedLoading } from "../hooks/useDelayedLoading";
+import { useLeaderboardGate } from "../hooks/useLeaderboardGate";
 
 type Period = "today" | "week";
 
@@ -22,13 +23,34 @@ export function LeaderboardPage() {
   const [week, setWeek] = useState<LeaderboardWeek | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
   const { user } = useAuth();
+  const { requestAccess, accessVersion } = useLeaderboardGate();
 
   const periodData = period === "today" ? today : week;
   // Only show loading when there is nothing to display yet (not on tab refresh).
   const showLoading = useDelayedLoading(loading && periodData == null);
 
   useEffect(() => {
+    let cancelled = false;
+    setReady(false);
+    void requestAccess()
+      .then((ok) => {
+        if (!cancelled) setReady(ok);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load");
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [requestAccess, accessVersion]);
+
+  useEffect(() => {
+    if (!ready) return;
     const hasCached = (period === "today" ? today : week) != null;
     if (!hasCached) {
       setLoading(true);
@@ -45,7 +67,7 @@ export function LeaderboardPage() {
       .finally(() => setLoading(false));
     // Refetch when the tab changes only; today/week are read for cache check.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
-  }, [period]);
+  }, [period, ready]);
 
   const myRank = period === "today" ? today?.myRank : week?.myRank;
   const subtitle =
@@ -56,6 +78,12 @@ export function LeaderboardPage() {
       : week
         ? `${week.weekStart} – ${week.weekEnd} · Weekly total`
         : "";
+
+  if (!ready) {
+    return error ? (
+      <p className="text-danger text-center text-sm m-auto">{error}</p>
+    ) : null;
+  }
 
   return (
     <div className="w-full max-w-md py-4 pb-8">

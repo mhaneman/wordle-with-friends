@@ -14,6 +14,8 @@ export interface GameToday {
   puzzleDate: string;
   maxGuesses: number;
   berserk: boolean;
+  berserkDeclined?: boolean;
+  peeked?: boolean;
   guesses: GuessRow[];
   status: "in_progress" | "won" | "lost";
   guessCount?: number;

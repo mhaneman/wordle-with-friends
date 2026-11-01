@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { GameToday, GuessResponse, GuessRow, LetterState } from "../api/types";
 import { BerserkPrompt } from "../components/BerserkPrompt";
+import { useLeaderboardGate } from "../hooks/useLeaderboardGate";
 import { Grid } from "../components/Grid";
 import { GuessesFooter } from "../components/GuessesFooter";
 import { Keyboard } from "../components/Keyboard";
@@ -26,9 +27,9 @@ export function GamePage() {
   const [loading, setLoading] = useState(true);
   const showLoading = useDelayedLoading(loading);
   const [submitting, setSubmitting] = useState(false);
-  const [berserking, setBerserking] = useState(false);
-  const [regularStarted, setRegularStarted] = useState(false);
+  const [modeChoice, setModeChoice] = useState<"yes" | "no" | null>(null);
   const [answer, setAnswer] = useState<string | undefined>();
+  const { promptOpen } = useLeaderboardGate();
 
   const maxGuesses = game?.maxGuesses ?? 6;
   const berserk = game?.berserk ?? false;
@@ -54,9 +55,6 @@ export function GamePage() {
     try {
       const data = await api<GameToday>("/api/v1/game/today");
       applyGameState(data);
-      setRegularStarted((prev) =>
-        data.berserk || (data.guesses?.length ?? 0) > 0 ? true : prev,
-      );
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed to load game");
     } finally {
@@ -87,22 +85,30 @@ export function GamePage() {
   }, [guesses]);
 
   const finished = status !== "in_progress";
-  const canBerserk = !finished && !berserk && guesses.length === 0;
-  const showBerserkPrompt = canBerserk && !regularStarted;
+  const showBerserkPrompt =
+    !loading &&
+    !finished &&
+    !berserk &&
+    !game?.berserkDeclined &&
+    guesses.length === 0;
 
-  async function confirmBerserk() {
-    if (!canBerserk || berserking) return;
-    setBerserking(true);
+  async function chooseMode(choice: "yes" | "no") {
+    if (!showBerserkPrompt || modeChoice) return;
+    setModeChoice(choice);
     setMessage("");
     try {
-      const data = await api<GameToday>("/api/v1/game/berserk", { method: "POST" });
+      const data = await api<GameToday>(
+        choice === "yes" ? "/api/v1/game/berserk" : "/api/v1/game/regular",
+        { method: "POST" },
+      );
       applyGameState(data);
-      setRegularStarted(true);
-      setMessage("Berserk mode — 4 guesses.");
+      if (choice === "yes") {
+        setMessage("Berserk mode — 4 guesses.");
+      }
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Could not go berserk");
+      setMessage(err instanceof Error ? err.message : "Could not start the game");
     } finally {
-      setBerserking(false);
+      setModeChoice(null);
     }
   }
 
@@ -160,14 +166,14 @@ export function GamePage() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (showBerserkPrompt || finished || submitting) return;
+      if (promptOpen || showBerserkPrompt || finished || submitting) return;
       if (e.key === "Enter") void handleKey("enter");
       else if (e.key === "Backspace") void handleKey("back");
       else if (/^[a-z]$/i.test(e.key)) void handleKey(e.key.toLowerCase());
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showBerserkPrompt, finished, submitting, handleKey]);
+  }, [promptOpen, showBerserkPrompt, finished, submitting, handleKey]);
 
   if (loading && !showLoading) {
     return null;
@@ -188,12 +194,9 @@ export function GamePage() {
       >
         {showBerserkPrompt ? (
           <BerserkPrompt
-            confirming={berserking}
-            onYes={() => void confirmBerserk()}
-            onNo={() => {
-              setRegularStarted(true);
-              setMessage("");
-            }}
+            pending={modeChoice}
+            onYes={() => void chooseMode("yes")}
+            onNo={() => void chooseMode("no")}
           />
         ) : (
           <div className="game-board flex flex-1 flex-col items-center justify-start w-full min-h-0 mx-auto">
@@ -215,6 +218,7 @@ export function GamePage() {
                   used={guesses.length}
                   max={maxGuesses}
                   berserk={berserk}
+                  peeked={game?.peeked}
                   status={status}
                   scoredPoints={game?.points}
                 />

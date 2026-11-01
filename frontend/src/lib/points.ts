@@ -1,10 +1,10 @@
 /** Matches backend game.PointsFromGuessCount for wins. */
 export function regularWinPoints(guessCount: number): number {
-  return 7 - guessCount;
+  return 8 - guessCount;
 }
 
 export function berserkWinPoints(guessCount: number): number {
-  return 9 - guessCount;
+  return 10 - guessCount;
 }
 
 export const REGULAR_MAX_GUESSES = 6;

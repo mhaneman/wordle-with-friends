@@ -63,10 +63,56 @@ func (h *Handler) Berserk(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		msg := "could not enable berserk"
-		if err.Error() == "cannot berserk after guessing" || err.Error() == "already berserk" {
+		if err.Error() == "cannot berserk after guessing" || err.Error() == "already berserk" || err.Error() == "already playing regular" {
 			msg = err.Error()
 		}
 		writeError(w, http.StatusConflict, msg)
+		return
+	}
+	writeJSON(w, http.StatusOK, gameStateResponse(date, gr))
+}
+
+func (h *Handler) Regular(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+	date := TodayPuzzleDate()
+	if err := h.ensurePuzzle(r, date); err != nil {
+		writeError(w, http.StatusInternalServerError, "puzzle error")
+		return
+	}
+	gr, err := h.store.SetGameRegular(r.Context(), user.ID, date)
+	if errors.Is(err, store.ErrGameFinished) {
+		writeError(w, http.StatusConflict, "game already finished")
+		return
+	}
+	if err != nil {
+		msg := "could not start regular game"
+		if err.Error() == "already berserk" {
+			msg = err.Error()
+		}
+		writeError(w, http.StatusConflict, msg)
+		return
+	}
+	writeJSON(w, http.StatusOK, gameStateResponse(date, gr))
+}
+
+func (h *Handler) Peek(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+	date := TodayPuzzleDate()
+	if err := h.ensurePuzzle(r, date); err != nil {
+		writeError(w, http.StatusInternalServerError, "puzzle error")
+		return
+	}
+	gr, err := h.store.SetGamePeeked(r.Context(), user.ID, date)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "game error")
 		return
 	}
 	writeJSON(w, http.StatusOK, gameStateResponse(date, gr))
@@ -159,15 +205,23 @@ func (h *Handler) Guess(w http.ResponseWriter, r *http.Request) {
 
 func gameStateResponse(date time.Time, gr *store.GameResult) map[string]interface{} {
 	resp := map[string]interface{}{
-		"puzzleDate": date.Format("2006-01-02"),
-		"maxGuesses": MaxGuessesForGame(gr.Berserk),
-		"berserk":    gr.Berserk,
-		"guesses":    gr.Guesses,
-		"status":     gameStatus(gr),
+		"puzzleDate":      date.Format("2006-01-02"),
+		"maxGuesses":      MaxGuessesForGame(gr.Berserk),
+		"berserk":         gr.Berserk,
+		"berserkDeclined": gr.BerserkDeclined,
+		"peeked":          gr.Peeked,
+		"guesses":         gr.Guesses,
+		"status":          gameStatus(gr),
 	}
-	if !gr.InProgress && gr.Won && gr.GuessCount != nil {
-		resp["guessCount"] = *gr.GuessCount
-		resp["points"] = PointsFromGuessCount(*gr.GuessCount, gr.Berserk)
+	if !gr.InProgress {
+		guessCount := 0
+		if gr.GuessCount != nil {
+			guessCount = *gr.GuessCount
+			if gr.Won {
+				resp["guessCount"] = guessCount
+			}
+		}
+		resp["points"] = AwardedPoints(gr.Won, guessCount, gr.Berserk, gr.Peeked)
 	}
 	return resp
 }

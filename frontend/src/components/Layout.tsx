@@ -1,8 +1,13 @@
-import { Link, NavLink } from "react-router-dom";
+import { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useLeaderboardGate } from "../hooks/useLeaderboardGate";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { requestAccess } = useLeaderboardGate();
+  const [linkError, setLinkError] = useState("");
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `px-3 py-1 rounded text-sm font-semibold uppercase tracking-wide ${
       isActive ? "text-ink" : "text-muted hover:text-ink"
@@ -17,7 +22,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <NavLink to="/" className={linkClass} end>
                 Play
               </NavLink>
-              <NavLink to="/leaderboard" className={linkClass}>
+              <NavLink
+                to="/leaderboard"
+                className={linkClass}
+                onClick={(e) => {
+                  if (
+                    e.metaKey ||
+                    e.ctrlKey ||
+                    e.shiftKey ||
+                    e.altKey ||
+                    e.button !== 0
+                  ) {
+                    return;
+                  }
+                  e.preventDefault();
+                  setLinkError("");
+                  void requestAccess()
+                    .then((ok) => {
+                      if (ok) navigate("/leaderboard");
+                    })
+                    .catch((err) => {
+                      setLinkError(
+                        err instanceof Error
+                          ? err.message
+                          : "Could not open the leaderboard",
+                      );
+                    });
+                }}
+              >
                 Leaderboard
               </NavLink>
             </>
@@ -44,6 +76,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </header>
+      {linkError && (
+        <p className="text-danger text-xs text-center py-2 px-4">{linkError}</p>
+      )}
       <main className="flex-1 flex flex-col min-h-0 w-full px-4 pt-0 pb-0">
         <div className="flex flex-1 flex-col min-h-0 basis-0 w-full max-w-lg mx-auto h-full">
           {children}

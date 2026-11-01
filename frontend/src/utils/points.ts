@@ -1,4 +1,5 @@
-/** Matches backend scoring (normal: 7 − n, berserk: 9 − n). */
+/** Matches backend scoring (normal: 8 − n, berserk: that plus 2). */
 export function pointsIfWonOnGuess(guessNum: number, berserk: boolean): number {
-  return berserk ? 9 - guessNum : 7 - guessNum;
+  const points = 8 - guessNum;
+  return berserk ? points + 2 : points;
 }

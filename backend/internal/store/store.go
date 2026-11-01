@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("not found")
+	ErrNotFound       = errors.New("not found")
 	ErrUsernameExists = errors.New("username already exists")
-	ErrGameFinished  = errors.New("game already finished")
+	ErrGameFinished   = errors.New("game already finished")
 )
 
 type User struct {
@@ -31,15 +31,17 @@ type GuessRow struct {
 }
 
 type GameResult struct {
-	ID          uuid.UUID   `json:"id"`
-	UserID      uuid.UUID   `json:"userId"`
-	PuzzleDate  time.Time   `json:"puzzleDate"`
-	GuessCount  *int        `json:"guessCount"`
-	Won         bool        `json:"won"`
-	Berserk     bool        `json:"berserk"`
-	Guesses     []GuessRow  `json:"guesses"`
-	InProgress  bool        `json:"inProgress"`
-	CompletedAt *time.Time  `json:"completedAt"`
+	ID              uuid.UUID  `json:"id"`
+	UserID          uuid.UUID  `json:"userId"`
+	PuzzleDate      time.Time  `json:"puzzleDate"`
+	GuessCount      *int       `json:"guessCount"`
+	Won             bool       `json:"won"`
+	Berserk         bool       `json:"berserk"`
+	BerserkDeclined bool       `json:"berserkDeclined"`
+	Guesses         []GuessRow `json:"guesses"`
+	InProgress      bool       `json:"inProgress"`
+	Peeked          bool       `json:"peeked"`
+	CompletedAt     *time.Time `json:"completedAt"`
 }
 
 type LeaderboardEntry struct {
@@ -60,14 +62,15 @@ type WeeklyLeaderboardEntry struct {
 	GamesPlayed int       `json:"gamesPlayed"`
 }
 
+// gamePointsSQL must match game.AwardedPoints.
 const gamePointsSQL = `
-	CASE
+	(CASE
 		WHEN gr.won AND gr.guess_count IS NOT NULL AND gr.berserk THEN
-			9 - gr.guess_count
+			10 - gr.guess_count
 		WHEN gr.won AND gr.guess_count IS NOT NULL THEN
-			7 - gr.guess_count
+			8 - gr.guess_count
 		ELSE 0
-	END`
+	END) - CASE WHEN gr.peeked THEN 1 ELSE 0 END`
 
 type Store struct {
 	pool *pgxpool.Pool
@@ -187,34 +190,57 @@ func (s *Store) GetDailyPuzzleWord(ctx context.Context, date time.Time) (string,
 	return word, err
 }
 
-func (s *Store) GetOrCreateGame(ctx context.Context, userID uuid.UUID, date time.Time) (*GameResult, error) {
+const gameSelectCols = `id, user_id, puzzle_date, guess_count, won, berserk, berserk_declined, peeked, guesses, in_progress, completed_at`
+
+func scanGame(row pgx.Row) (*GameResult, error) {
 	var gr GameResult
 	var guessesJSON []byte
 	var puzzleDate time.Time
-	err := s.pool.QueryRow(ctx, `
-		SELECT id, user_id, puzzle_date, guess_count, won, berserk, guesses, in_progress, completed_at
-		FROM game_results
-		WHERE user_id = $1 AND puzzle_date = $2::date
-	`, userID, date.Format("2006-01-02")).Scan(
-		&gr.ID, &gr.UserID, &puzzleDate, &gr.GuessCount, &gr.Won, &gr.Berserk, &guessesJSON, &gr.InProgress, &gr.CompletedAt,
+	err := row.Scan(
+		&gr.ID, &gr.UserID, &puzzleDate, &gr.GuessCount, &gr.Won, &gr.Berserk, &gr.BerserkDeclined, &gr.Peeked, &guessesJSON, &gr.InProgress, &gr.CompletedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		err = s.pool.QueryRow(ctx, `
-			INSERT INTO game_results (user_id, puzzle_date, guesses, in_progress)
-			VALUES ($1, $2::date, '[]'::jsonb, true)
-			RETURNING id, user_id, puzzle_date, guess_count, won, berserk, guesses, in_progress, completed_at
-		`, userID, date.Format("2006-01-02")).Scan(
-			&gr.ID, &gr.UserID, &puzzleDate, &gr.GuessCount, &gr.Won, &gr.Berserk, &guessesJSON, &gr.InProgress, &gr.CompletedAt,
-		)
-	}
 	if err != nil {
 		return nil, err
 	}
 	gr.PuzzleDate = puzzleDate
-	if err := json.Unmarshal(guessesJSON, &gr.Guesses); err != nil {
+	if err := json.Unmarshal(guessesJSON, &gr.Guesses); err != nil || gr.Guesses == nil {
 		gr.Guesses = []GuessRow{}
 	}
 	return &gr, nil
+}
+
+func (s *Store) GetGame(ctx context.Context, userID uuid.UUID, date time.Time) (*GameResult, error) {
+	gr, err := scanGame(s.pool.QueryRow(ctx, `
+		SELECT `+gameSelectCols+`
+		FROM game_results
+		WHERE user_id = $1 AND puzzle_date = $2::date
+	`, userID, date.Format("2006-01-02")))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return gr, nil
+}
+
+func (s *Store) GetOrCreateGame(ctx context.Context, userID uuid.UUID, date time.Time) (*GameResult, error) {
+	gr, err := s.GetGame(ctx, userID, date)
+	if err == nil {
+		return gr, nil
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return nil, err
+	}
+	gr, err = scanGame(s.pool.QueryRow(ctx, `
+		INSERT INTO game_results (user_id, puzzle_date, guesses, in_progress)
+		VALUES ($1, $2::date, '[]'::jsonb, true)
+		RETURNING `+gameSelectCols+`
+	`, userID, date.Format("2006-01-02")))
+	if err != nil {
+		return nil, err
+	}
+	return gr, nil
 }
 
 func (s *Store) UpdateGame(ctx context.Context, gr *GameResult) error {
@@ -224,10 +250,25 @@ func (s *Store) UpdateGame(ctx context.Context, gr *GameResult) error {
 	}
 	_, err = s.pool.Exec(ctx, `
 		UPDATE game_results
-		SET guess_count = $2, won = $3, berserk = $4, guesses = $5, in_progress = $6, completed_at = $7
+		SET guess_count = $2, won = $3, berserk = $4, berserk_declined = $5, peeked = $6, guesses = $7, in_progress = $8, completed_at = $9
 		WHERE id = $1
-	`, gr.ID, gr.GuessCount, gr.Won, gr.Berserk, guessesJSON, gr.InProgress, gr.CompletedAt)
+	`, gr.ID, gr.GuessCount, gr.Won, gr.Berserk, gr.BerserkDeclined, gr.Peeked, guessesJSON, gr.InProgress, gr.CompletedAt)
 	return err
+}
+
+func (s *Store) SetGamePeeked(ctx context.Context, userID uuid.UUID, date time.Time) (*GameResult, error) {
+	gr, err := s.GetOrCreateGame(ctx, userID, date)
+	if err != nil {
+		return nil, err
+	}
+	if !gr.InProgress || gr.Peeked {
+		return gr, nil
+	}
+	gr.Peeked = true
+	if err := s.UpdateGame(ctx, gr); err != nil {
+		return nil, err
+	}
+	return gr, nil
 }
 
 func (s *Store) SetGameBerserk(ctx context.Context, userID uuid.UUID, date time.Time) (*GameResult, error) {
@@ -241,10 +282,35 @@ func (s *Store) SetGameBerserk(ctx context.Context, userID uuid.UUID, date time.
 	if len(gr.Guesses) > 0 {
 		return nil, errors.New("cannot berserk after guessing")
 	}
+	if gr.BerserkDeclined {
+		return nil, errors.New("already playing regular")
+	}
 	if gr.Berserk {
 		return nil, errors.New("already berserk")
 	}
 	gr.Berserk = true
+	gr.BerserkDeclined = false
+	if err := s.UpdateGame(ctx, gr); err != nil {
+		return nil, err
+	}
+	return gr, nil
+}
+
+func (s *Store) SetGameRegular(ctx context.Context, userID uuid.UUID, date time.Time) (*GameResult, error) {
+	gr, err := s.GetOrCreateGame(ctx, userID, date)
+	if err != nil {
+		return nil, err
+	}
+	if !gr.InProgress {
+		return nil, ErrGameFinished
+	}
+	if gr.Berserk {
+		return nil, errors.New("already berserk")
+	}
+	if gr.BerserkDeclined {
+		return gr, nil
+	}
+	gr.BerserkDeclined = true
 	if err := s.UpdateGame(ctx, gr); err != nil {
 		return nil, err
 	}
@@ -258,7 +324,7 @@ func (s *Store) GetLeaderboard(ctx context.Context, date time.Time, limit int) (
 			u.username,
 			gr.berserk,
 			COALESCE(gr.guess_count, jsonb_array_length(gr.guesses)::int) AS guess_count,
-			` + gamePointsSQL + ` AS points,
+			`+gamePointsSQL+` AS points,
 			gr.completed_at
 		FROM game_results gr
 		JOIN users u ON u.id = gr.user_id
