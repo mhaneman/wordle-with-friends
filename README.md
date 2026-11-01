@@ -1,4 +1,4 @@
-# The Secret Word
+# Word War
 
 Daily Wordle with login, server-authoritative scoring, and a leaderboard ranked by fewest guesses.
 

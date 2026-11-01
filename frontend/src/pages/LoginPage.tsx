@@ -34,7 +34,7 @@ export function LoginPage() {
     <div className="flex flex-col items-center w-full py-6">
       <div className="w-full max-w-sm">
       <h1 className="text-2xl font-bold text-center mb-6 tracking-wide">
-        The Secret Word
+        Word War
       </h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
@@ -43,7 +43,7 @@ export function LoginPage() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
-          className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2"
+          className="bg-surface border border-line-strong rounded px-3 py-2"
           required
         />
         <input
@@ -52,21 +52,21 @@ export function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
-          className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2"
+          className="bg-surface border border-line-strong rounded px-3 py-2"
           required
         />
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-danger text-sm">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="bg-correct hover:opacity-90 text-white font-bold py-2 rounded"
+          className="bg-correct hover:opacity-90 text-canvas font-bold py-2 rounded"
         >
           {loading ? "Signing in…" : "Log in"}
         </button>
       </form>
-      <p className="text-neutral-400 text-sm text-center mt-6">
+      <p className="text-muted text-sm text-center mt-6">
         No account?{" "}
-        <Link to="/register" className="text-white underline">
+        <Link to="/register" className="text-ink underline">
           Register
         </Link>
       </p>

@@ -26,7 +26,7 @@ export function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-neutral-950">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-canvas">
       <div className="w-full max-w-sm">
         <h1 className="text-xl font-bold text-center mb-6">Admin</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -35,15 +35,15 @@ export function AdminLoginPage() {
             placeholder="Admin password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2"
+            className="bg-surface border border-line-strong rounded px-3 py-2"
             required
             autoComplete="current-password"
           />
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-danger text-sm">{error}</p>}
           <button
             type="submit"
             disabled={submitting}
-            className="bg-correct hover:opacity-90 text-white font-bold py-2 rounded"
+            className="bg-correct hover:opacity-90 text-canvas font-bold py-2 rounded"
           >
             {submitting ? "Signing in…" : "Sign in"}
           </button>

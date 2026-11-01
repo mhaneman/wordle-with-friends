@@ -9,7 +9,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     return null;
   }
   if (showLoading) {
-    return <p className="text-neutral-400 text-sm mt-12">Loading…</p>;
+    return <p className="text-muted text-sm mt-12">Loading…</p>;
   }
   if (!isAdmin) {
     return <Navigate to="/admin/login" replace />;

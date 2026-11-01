@@ -174,7 +174,7 @@ export function GamePage() {
   }
   if (showLoading) {
     return (
-      <p className="text-neutral-400 m-auto">Loading today&apos;s puzzle…</p>
+      <p className="text-muted m-auto">Loading today&apos;s puzzle…</p>
     );
   }
 
@@ -233,7 +233,7 @@ export function GamePage() {
       </div>
 
       {!finished && !showBerserkPrompt && (
-        <div className="shrink-0 w-[calc(100%+2rem)] -mx-4 max-w-none md:mx-0 md:w-full border-t border-neutral-800 bg-neutral-950 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div className="shrink-0 w-[calc(100%+2rem)] -mx-4 max-w-none md:mx-0 md:w-full border-t border-line bg-canvas pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           <Keyboard
             keyStates={keyStates}
             onKey={(k) => void handleKey(k)}

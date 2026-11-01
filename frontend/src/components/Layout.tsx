@@ -5,12 +5,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `px-3 py-1 rounded text-sm font-semibold uppercase tracking-wide ${
-      isActive ? "text-white" : "text-neutral-400 hover:text-white"
+      isActive ? "text-ink" : "text-muted hover:text-ink"
     }`;
 
   return (
     <div className="flex flex-1 flex-col min-h-0 basis-0 w-full h-full">
-      <header className="border-b border-neutral-800 px-4 py-2 flex items-center justify-between max-w-lg mx-auto w-full">
+      <header className="border-b border-line px-4 py-2 flex items-center justify-between max-w-lg mx-auto w-full">
         <nav className="flex gap-2">
           {user && (
             <>
@@ -26,19 +26,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-3 text-sm">
           {user ? (
             <>
-              <span className="text-neutral-400 hidden sm:inline">
+              <span className="text-muted hidden sm:inline">
                 {user.username}
               </span>
               <button
                 type="button"
                 onClick={() => void logout()}
-                className="text-neutral-400 hover:text-white"
+                className="text-muted hover:text-ink"
               >
                 Log out
               </button>
             </>
           ) : (
-            <Link to="/login" className="text-neutral-400 hover:text-white">
+            <Link to="/login" className="text-muted hover:text-ink">
               Log in
             </Link>
           )}

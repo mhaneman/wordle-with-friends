@@ -12,8 +12,8 @@ type Period = "today" | "week";
 const tabClass = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-1 text-sm font-semibold uppercase tracking-wide rounded ${
     isActive
-      ? "bg-neutral-800 text-white"
-      : "text-neutral-400 hover:text-white"
+      ? "bg-surface-raised text-ink"
+      : "text-muted hover:text-ink"
   }`;
 
 export function LeaderboardPage() {
@@ -71,7 +71,7 @@ export function LeaderboardPage() {
       </div>
 
       {subtitle && (
-        <p className="text-neutral-500 text-xs text-center mb-6">{subtitle}</p>
+        <p className="text-faint text-xs text-center mb-6">{subtitle}</p>
       )}
 
       {myRank != null && (
@@ -81,9 +81,9 @@ export function LeaderboardPage() {
       )}
 
       {showLoading && (
-        <p className="text-neutral-400 text-center">Loading…</p>
+        <p className="text-muted text-center">Loading…</p>
       )}
-      {error && <p className="text-red-400 text-center text-sm">{error}</p>}
+      {error && <p className="text-danger text-center text-sm">{error}</p>}
 
       {!error && period === "today" && today && (
         <LeaderboardDailyTable entries={today.entries} userId={user?.id} />
@@ -105,7 +105,7 @@ function LeaderboardDailyTable({
 }) {
   if (entries.length === 0) {
     return (
-      <p className="text-neutral-400 text-center text-sm">
+      <p className="text-muted text-center text-sm">
         No completed games yet today.
       </p>
     );
@@ -113,7 +113,7 @@ function LeaderboardDailyTable({
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="text-neutral-500 border-b border-neutral-800">
+        <tr className="text-faint border-b border-line">
           <th className="py-2 text-left w-12">#</th>
           <th className="py-2 text-left">Player</th>
           <th className="py-2 text-right w-16">Pts</th>
@@ -123,15 +123,15 @@ function LeaderboardDailyTable({
         {entries.map((e) => (
           <tr
             key={e.userId}
-            className={`border-b border-neutral-900 ${
-              userId === e.userId ? "bg-neutral-900/50" : ""
+            className={`border-b border-line-subtle ${
+              userId === e.userId ? "bg-surface/50" : ""
             }`}
           >
-            <td className="py-2.5 text-neutral-400">{e.rank}</td>
+            <td className="py-2.5 text-muted">{e.rank}</td>
             <td className="py-2.5 font-medium">
               {e.username}
               {e.berserk && (
-                <span className="ml-1.5 text-amber-400 text-xs font-semibold">
+                <span className="ml-1.5 text-warning text-xs font-semibold">
                   ⚡
                 </span>
               )}
@@ -153,7 +153,7 @@ function LeaderboardWeeklyTable({
 }) {
   if (entries.length === 0) {
     return (
-      <p className="text-neutral-400 text-center text-sm">
+      <p className="text-muted text-center text-sm">
         No completed games this week yet.
       </p>
     );
@@ -161,7 +161,7 @@ function LeaderboardWeeklyTable({
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="text-neutral-500 border-b border-neutral-800">
+        <tr className="text-faint border-b border-line">
           <th className="py-2 text-left w-12">#</th>
           <th className="py-2 text-left">Player</th>
           <th className="py-2 text-right w-14">Pts</th>
@@ -172,14 +172,14 @@ function LeaderboardWeeklyTable({
         {entries.map((e) => (
           <tr
             key={e.userId}
-            className={`border-b border-neutral-900 ${
-              userId === e.userId ? "bg-neutral-900/50" : ""
+            className={`border-b border-line-subtle ${
+              userId === e.userId ? "bg-surface/50" : ""
             }`}
           >
-            <td className="py-2.5 text-neutral-400">{e.rank}</td>
+            <td className="py-2.5 text-muted">{e.rank}</td>
             <td className="py-2.5 font-medium">{e.username}</td>
             <td className="py-2.5 text-right font-bold">{e.totalPoints}</td>
-            <td className="py-2.5 text-right text-neutral-400">
+            <td className="py-2.5 text-right text-muted">
               {e.gamesPlayed}
             </td>
           </tr>

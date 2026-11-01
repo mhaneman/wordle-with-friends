@@ -50,14 +50,14 @@ export function RegisterPage() {
           Request submitted
         </h1>
         <div className="rounded border border-correct/40 bg-correct/10 px-4 py-4 text-sm space-y-4">
-          <p className="text-neutral-200 text-center">{complete.message}</p>
-          <p className="text-neutral-400 text-center text-xs">
+          <p className="text-ink-soft text-center">{complete.message}</p>
+          <p className="text-muted text-center text-xs">
             Log in as{" "}
-            <span className="text-white font-mono">{complete.username}</span>{" "}
+            <span className="text-ink font-mono">{complete.username}</span>{" "}
             after an admin approves you.
           </p>
           <CopyableSecret label="Your password" value={complete.password} />
-          <p className="text-amber-400/90 text-xs text-center">
+          <p className="text-warning/90 text-xs text-center">
             Save this password now. You won&apos;t be able to see it again on
             this site.
           </p>
@@ -77,8 +77,8 @@ export function RegisterPage() {
       <h1 className="text-2xl font-bold text-center mb-2 tracking-wide">
         Request access
       </h1>
-      <p className="text-neutral-400 text-sm text-center mb-6">
-        The Secret Word is invite-only. Pick a username; an admin will
+      <p className="text-muted text-sm text-center mb-6">
+        Word War is invite-only. Pick a username; an admin will
         approve you before you can log in. We&apos;ll generate a password for
         you to save.
       </p>
@@ -90,26 +90,26 @@ export function RegisterPage() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
-          className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2"
+          className="bg-surface border border-line-strong rounded px-3 py-2"
           required
           minLength={3}
           maxLength={32}
           pattern="[a-zA-Z0-9_]+"
           title="3–32 characters: letters, numbers, and underscores only"
         />
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-danger text-sm">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="bg-correct hover:opacity-90 text-white font-bold py-2 rounded"
+          className="bg-correct hover:opacity-90 text-canvas font-bold py-2 rounded"
         >
           {loading ? "Submitting…" : "Request access"}
         </button>
       </form>
 
-      <p className="text-neutral-400 text-sm text-center mt-6">
+      <p className="text-muted text-sm text-center mt-6">
         Already approved?{" "}
-        <Link to="/login" className="text-white underline">
+        <Link to="/login" className="text-ink underline">
           Log in
         </Link>
       </p>

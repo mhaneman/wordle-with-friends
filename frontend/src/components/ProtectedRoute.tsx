@@ -10,7 +10,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
   if (showLoading) {
     return (
-      <p className="text-neutral-400 text-sm mt-12">Loading…</p>
+      <p className="text-muted text-sm mt-12">Loading…</p>
     );
   }
   if (!user) {

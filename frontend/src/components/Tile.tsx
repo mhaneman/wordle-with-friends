@@ -1,12 +1,12 @@
 import type { LetterState } from "../api/types";
 
 const stateClasses: Record<LetterState | "empty" | "filled" | "answer", string> = {
-  empty: "border-neutral-600 text-white",
-  filled: "border-neutral-500 text-white",
-  correct: "bg-correct border-correct text-white",
-  present: "bg-present border-present text-white",
-  absent: "bg-absent border-absent text-white",
-  answer: "bg-answer border-answer text-white",
+  empty: "border-line-emphasis text-ink",
+  filled: "border-line-filled text-ink",
+  correct: "bg-correct border-correct text-canvas",
+  present: "bg-present border-present text-ink",
+  absent: "bg-absent border-absent text-ink",
+  answer: "bg-answer border-answer text-ink",
 };
 
 type TileState = LetterState | "answer";

@@ -3,7 +3,7 @@ import type { LetterState } from "../api/types";
 const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 
 const keyColors: Record<LetterState, string> = {
-  correct: "bg-correct",
+  correct: "bg-correct text-canvas",
   present: "bg-present",
   absent: "bg-absent",
 };
@@ -20,7 +20,7 @@ const rowClass = "flex w-full gap-1 sm:gap-1.5";
 const homeRowClass =
   `${rowClass} px-[calc((100%-2.25rem)/20)] sm:px-[calc((100%-3.375rem)/20)]`;
 const keyClass =
-  "rounded font-bold uppercase text-white flex items-center justify-center select-none transition-colors duration-75 min-w-0 overflow-hidden px-0.5 h-14 sm:h-16 md:h-[4.25rem] text-[clamp(0.875rem,4vw,1.125rem)]";
+  "rounded font-bold uppercase flex items-center justify-center select-none transition-colors duration-75 min-w-0 overflow-hidden px-0.5 h-14 sm:h-16 md:h-[4.25rem] text-[clamp(0.875rem,4vw,1.125rem)]";
 
 function keyLabel(k: string) {
   if (k === "enter") {
@@ -42,10 +42,10 @@ function keyLabel(k: string) {
 export function Keyboard({ keyStates, onKey, inactive }: KeyboardProps) {
   const renderKey = (k: string, wide = false) => {
     const state = keyStates[k];
-    const color = state ? keyColors[state] : "bg-key";
+    const color = state ? keyColors[state] : "bg-key text-ink";
     const pressed = state
       ? "active:brightness-[0.72]"
-      : "active:bg-neutral-600";
+      : "active:bg-key-pressed";
     const wideFlex = k === "enter" ? "flex-[2]" : "flex-[1.5]";
     return (
       <button

@@ -36,7 +36,7 @@ export function GuessesFooter({
   }
 
   return (
-    <p className="mt-3 text-center text-sm text-neutral-400 shrink-0 pb-1">
+    <p className="mt-3 text-center text-sm text-muted shrink-0 pb-1">
       <AnimatedStat value={used} direction="up" />
       /{max} guesses used · <AnimatedStat value={pointsValue} direction="down" />
       {pointsSuffix}
