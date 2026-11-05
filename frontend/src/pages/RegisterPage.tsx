@@ -101,7 +101,7 @@ export function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-correct hover:opacity-90 text-canvas font-bold py-2 rounded"
+          className="bg-correct hover:opacity-90 text-ink font-bold py-2 rounded"
         >
           {loading ? "Submitting…" : "Request access"}
         </button>

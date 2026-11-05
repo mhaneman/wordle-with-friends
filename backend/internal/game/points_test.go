@@ -17,10 +17,12 @@ func TestAwardedPoints(t *testing.T) {
 		{name: "berserk one guess", won: true, guessCount: 1, berserk: true, want: 9},
 		{name: "berserk four guesses", won: true, guessCount: 4, berserk: true, want: 6},
 		{name: "berserk win", won: true, guessCount: 2, berserk: true, want: 8},
-		{name: "loss", want: 0},
+		{name: "loss", want: 1},
+		{name: "peeked one guess", won: true, guessCount: 1, peeked: true, want: 6},
 		{name: "peeked normal win", won: true, guessCount: 3, peeked: true, want: 4},
-		{name: "peeked loss", peeked: true, want: -1},
+		{name: "peeked loss", peeked: true, want: 0},
 		{name: "peeked six-guess win", won: true, guessCount: 6, peeked: true, want: 1},
+		{name: "peeked berserk win", won: true, guessCount: 4, berserk: true, peeked: true, want: 5},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

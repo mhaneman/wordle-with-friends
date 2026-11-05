@@ -63,14 +63,15 @@ type WeeklyLeaderboardEntry struct {
 }
 
 // gamePointsSQL must match game.AwardedPoints.
+// Win: 7 − guesses (berserk adds 2). Finishing without peeking adds 1.
 const gamePointsSQL = `
 	(CASE
 		WHEN gr.won AND gr.guess_count IS NOT NULL AND gr.berserk THEN
-			10 - gr.guess_count
+			9 - gr.guess_count
 		WHEN gr.won AND gr.guess_count IS NOT NULL THEN
-			8 - gr.guess_count
+			7 - gr.guess_count
 		ELSE 0
-	END) - CASE WHEN gr.peeked THEN 1 ELSE 0 END`
+	END) + CASE WHEN gr.peeked THEN 0 ELSE 1 END`
 
 type Store struct {
 	pool *pgxpool.Pool

@@ -3,7 +3,7 @@ import type { LetterState } from "../api/types";
 const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 
 const keyColors: Record<LetterState, string> = {
-  correct: "bg-correct text-canvas",
+  correct: "bg-correct text-ink",
   present: "bg-present",
   absent: "bg-absent",
 };

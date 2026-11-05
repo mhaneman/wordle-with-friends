@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { GameToday, GuessResponse, GuessRow, LetterState } from "../api/types";
 import { BerserkPrompt } from "../components/BerserkPrompt";
-import { useLeaderboardGate } from "../hooks/useLeaderboardGate";
 import { Grid } from "../components/Grid";
 import { GuessesFooter } from "../components/GuessesFooter";
 import { Keyboard } from "../components/Keyboard";
@@ -29,7 +28,6 @@ export function GamePage() {
   const [submitting, setSubmitting] = useState(false);
   const [modeChoice, setModeChoice] = useState<"yes" | "no" | null>(null);
   const [answer, setAnswer] = useState<string | undefined>();
-  const { promptOpen } = useLeaderboardGate();
 
   const maxGuesses = game?.maxGuesses ?? 6;
   const berserk = game?.berserk ?? false;
@@ -166,14 +164,14 @@ export function GamePage() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (promptOpen || showBerserkPrompt || finished || submitting) return;
+      if (showBerserkPrompt || finished || submitting) return;
       if (e.key === "Enter") void handleKey("enter");
       else if (e.key === "Backspace") void handleKey("back");
       else if (/^[a-z]$/i.test(e.key)) void handleKey(e.key.toLowerCase());
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [promptOpen, showBerserkPrompt, finished, submitting, handleKey]);
+  }, [showBerserkPrompt, finished, submitting, handleKey]);
 
   if (loading && !showLoading) {
     return null;
@@ -222,6 +220,11 @@ export function GamePage() {
                   status={status}
                   scoredPoints={game?.points}
                 />
+              )}
+              {game?.peeked && (
+                <p className="mt-1 text-sm text-danger text-center shrink-0 px-2">
+                  You peeked and lost your bonus point.
+                </p>
               )}
               {finished && (
                 <Link

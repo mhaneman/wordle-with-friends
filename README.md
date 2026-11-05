@@ -38,9 +38,9 @@ ADMIN_PASSWORD=your-secure-admin-password
 - One puzzle per calendar day in **US Pacific** (`America/Los_Angeles`), shared by all players
 - Six guesses maximum; answer is only revealed after win or loss
 - **Daily** leaderboard: today’s puzzle; **weekly** leaderboard: sum of Mon–Sun (Pacific) points
-- Leaderboard ranks everyone who finished by points; losses score **0**
-- Peeking at the leaderboard before finishing costs **1** point on that day's score (a peeked loss scores **−1**). The warning appears once; after you peek, the board stays open
-- Normal win: `8 − guesses` (1 guess = 7, 6 guesses = 2) · **Berserk** (before first guess, 4 guesses max) adds 2
+- Leaderboard ranks everyone who finished by points. A loss scores **1** if you never peeked, otherwise **0**
+- Finishing without peeking adds **1** point. Opening the leaderboard before you finish skips that bonus, so a score is never negative. After you peek, the board stays open
+- Normal win: `7 − guesses` (1 guess = 6, 6 guesses = 1), plus 1 if you didn't peek · **Berserk** (before first guess, 4 guesses max) adds 2
 
 ## Project layout
 

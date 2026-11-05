@@ -3,7 +3,7 @@ import type { LetterState } from "../api/types";
 const stateClasses: Record<LetterState | "empty" | "filled" | "answer", string> = {
   empty: "border-line-emphasis text-ink",
   filled: "border-line-filled text-ink",
-  correct: "bg-correct border-correct text-canvas",
+  correct: "bg-correct border-correct text-ink",
   present: "bg-present border-present text-ink",
   absent: "bg-absent border-absent text-ink",
   answer: "bg-answer border-answer text-ink",

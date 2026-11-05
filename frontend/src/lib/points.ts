@@ -1,10 +1,10 @@
-/** Matches backend game.PointsFromGuessCount for wins. */
+/** Matches backend game.PointsFromGuessCount for wins, before the no-peek bonus. */
 export function regularWinPoints(guessCount: number): number {
-  return 8 - guessCount;
+  return 7 - guessCount;
 }
 
 export function berserkWinPoints(guessCount: number): number {
-  return 10 - guessCount;
+  return 9 - guessCount;
 }
 
 export const REGULAR_MAX_GUESSES = 6;

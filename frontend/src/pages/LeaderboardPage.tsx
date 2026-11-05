@@ -25,7 +25,7 @@ export function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const { user } = useAuth();
-  const { requestAccess, accessVersion } = useLeaderboardGate();
+  const { requestAccess } = useLeaderboardGate();
 
   const periodData = period === "today" ? today : week;
   // Only show loading when there is nothing to display yet (not on tab refresh).
@@ -47,7 +47,7 @@ export function LeaderboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [requestAccess, accessVersion]);
+  }, [requestAccess]);
 
   useEffect(() => {
     if (!ready) return;
@@ -142,9 +142,9 @@ function LeaderboardDailyTable({
     <table className="w-full text-sm">
       <thead>
         <tr className="text-faint border-b border-line">
-          <th className="py-2 text-left w-12">#</th>
+          <th className="py-2 pl-4 text-left w-12">#</th>
           <th className="py-2 text-left">Player</th>
-          <th className="py-2 text-right w-16">Pts</th>
+          <th className="py-2 pr-4 text-right w-16">Pts</th>
         </tr>
       </thead>
       <tbody>
@@ -155,7 +155,7 @@ function LeaderboardDailyTable({
               userId === e.userId ? "bg-surface/50" : ""
             }`}
           >
-            <td className="py-2.5 text-muted">{e.rank}</td>
+            <td className="py-2.5 pl-4 text-muted">{e.rank}</td>
             <td className="py-2.5 font-medium">
               {e.username}
               {e.berserk && (
@@ -164,7 +164,7 @@ function LeaderboardDailyTable({
                 </span>
               )}
             </td>
-            <td className="py-2.5 text-right font-bold">{e.points}</td>
+            <td className="py-2.5 pr-4 text-right font-bold">{e.points}</td>
           </tr>
         ))}
       </tbody>
@@ -190,10 +190,10 @@ function LeaderboardWeeklyTable({
     <table className="w-full text-sm">
       <thead>
         <tr className="text-faint border-b border-line">
-          <th className="py-2 text-left w-12">#</th>
+          <th className="py-2 pl-4 text-left w-12">#</th>
           <th className="py-2 text-left">Player</th>
-          <th className="py-2 text-right w-14">Pts</th>
-          <th className="py-2 text-right w-12">Days</th>
+          <th className="py-2 pr-6 text-right w-20">Days</th>
+          <th className="py-2 pr-4 text-right w-14">Pts</th>
         </tr>
       </thead>
       <tbody>
@@ -204,12 +204,12 @@ function LeaderboardWeeklyTable({
               userId === e.userId ? "bg-surface/50" : ""
             }`}
           >
-            <td className="py-2.5 text-muted">{e.rank}</td>
+            <td className="py-2.5 pl-4 text-muted">{e.rank}</td>
             <td className="py-2.5 font-medium">{e.username}</td>
-            <td className="py-2.5 text-right font-bold">{e.totalPoints}</td>
-            <td className="py-2.5 text-right text-muted">
+            <td className="py-2.5 pr-6 text-right text-muted">
               {e.gamesPlayed}
             </td>
+            <td className="py-2.5 pr-4 text-right font-bold">{e.totalPoints}</td>
           </tr>
         ))}
       </tbody>

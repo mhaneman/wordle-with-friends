@@ -138,7 +138,7 @@ export function AdminDashboardPage() {
                       type="button"
                       disabled={acting === req.id}
                       onClick={() => void approve(req.id)}
-                      className="px-3 py-1.5 rounded bg-correct text-canvas text-sm font-semibold disabled:opacity-50"
+                      className="px-3 py-1.5 rounded bg-correct text-ink text-sm font-semibold disabled:opacity-50"
                     >
                       Approve
                     </button>

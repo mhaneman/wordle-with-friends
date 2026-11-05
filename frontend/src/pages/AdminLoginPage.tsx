@@ -43,7 +43,7 @@ export function AdminLoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="bg-correct hover:opacity-90 text-canvas font-bold py-2 rounded"
+            className="bg-correct hover:opacity-90 text-ink font-bold py-2 rounded"
           >
             {submitting ? "Signing in…" : "Sign in"}
           </button>

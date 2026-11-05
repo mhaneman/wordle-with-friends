@@ -12,10 +12,10 @@ func MaxGuessesForGame(berserk bool) int {
 	return MaxGuesses
 }
 
-// PointsFromGuessCount returns leaderboard points.
-// Normal: 8 − guesses (1 guess = 7, 6 guesses = 2). Berserk adds 2.
+// PointsFromGuessCount returns win points before the no-peek bonus.
+// Normal: 7 − guesses (1 guess = 6, 6 guesses = 1). Berserk adds 2.
 func PointsFromGuessCount(guessCount int, berserk bool) int {
-	points := 8 - guessCount
+	points := 7 - guessCount
 	if berserk {
 		points += 2
 	}
@@ -23,15 +23,15 @@ func PointsFromGuessCount(guessCount int, berserk bool) int {
 }
 
 // AwardedPoints is the score stored for a finished game.
-// Peeking at the leaderboard before finishing subtracts one point, so a loss is −1.
-// Keep in sync with store.gamePointsSQL.
+// Finishing without peeking adds one point. A peeked loss scores 0, so the
+// score is never negative. Keep in sync with store.gamePointsSQL.
 func AwardedPoints(won bool, guessCount int, berserk, peeked bool) int {
 	points := 0
 	if won {
 		points = PointsFromGuessCount(guessCount, berserk)
 	}
-	if peeked {
-		points--
+	if !peeked {
+		points++
 	}
 	return points
 }

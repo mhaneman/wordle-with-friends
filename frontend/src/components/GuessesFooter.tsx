@@ -20,7 +20,7 @@ export function GuessesFooter({
 }: GuessesFooterProps) {
   const preview =
     status === "in_progress" && used < max
-      ? pointsIfWonOnGuess(used + 1, berserk) - (peeked ? 1 : 0)
+      ? pointsIfWonOnGuess(used + 1, berserk) + (peeked ? 0 : 1)
       : null;
 
   const pointsValue =
